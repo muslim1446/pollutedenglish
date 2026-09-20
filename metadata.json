@@ -1,0 +1,6 @@
+{
+  "name": "Listening Practice",
+  "description": "Audio listening comprehension practice for real-world listening situations with background noise",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
