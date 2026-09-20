@@ -13,6 +13,8 @@ import {
 import { ACOUSTIC_PRESETS } from './audio/presets';
 import { audioEngine } from './audio/AudioEngine';
 import { Header } from './components/Header';
+import { SEOHead } from './components/SEOHead';
+import { GraphSchema } from './components/GraphSchema';
 import { LevelSelector } from './components/LevelSelector';
 import { PresetSelector } from './components/PresetSelector';
 import { WaveformVisualizer } from './components/WaveformVisualizer';
@@ -555,6 +557,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-orange-100 selection:text-orange-900">
+      <SEOHead />
+      <GraphSchema />
       {/* Top Navigation & App Bar */}
       <Header
         currentMode={currentMode}
