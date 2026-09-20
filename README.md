@@ -1,18 +1,21 @@
-# Listening Practice — Acoustic Ear: Degraded-Speech Listening Comprehension Trainer
+# Listening Practice — Acoustic Ear: Degraded-Speech Listening Practice Prototype
 
-**A university-grade, CEFR-aligned (A1–C1), Oxford-levelled English listening trainer for real-world degraded acoustic conditions: telephone bandpass, train-station PA reverberation, intercom staccato, walkie-talkie overdrive, and weak-cell packet loss — with real human audio, IPA-annotated minimal pairs, 3,600-word vocabulary, and 1,020 situated comprehension scenarios.**
+**An independent, unaccredited English listening-practice prototype for degraded acoustic conditions: telephone bandpass, train-station PA reverberation, intercom staccato, walkie-talkie overdrive, and weak-cell packet loss — with partially real human audio, IPA-annotated minimal pairs, 3,600-word vocabulary, and 1,020 template-generated practice scenarios.**
+
+> **Honesty notice — read first.** This is a hybrid: the core audio and linguistic foundations reuse real, well-established industry and academic standards, but the actual tuning, corpus tagging, and scenario writing are author-crafted heuristics. Difficulty levels and scenario prompts are **author-designed practice materials, not an officially accredited or certified test suite**. See [§0](#0-honesty-statement--what-is-standard-vs-what-is-author-made) and [§14](#14-limitations-threats-to-validity-and-known-defects--nothing-hidden).
 
 - App display name (`metadata.json`, `index.html`): **Listening Practice**
 - Internal engine / pipeline name (code, scripts, User-Agent strings): **Acoustic Ear / AcousticEarTrainer**
 - Current shipped corpus (`public/data/vocabulary.json`): **version `2.0.0`, 3,600 words + 1,020 scenarios, 1,330,524 bytes, generated 2026-09-20**
-- Audio store (`public/audio/`): **482 × MP3 files at time of writing** (coverage gap disclosed in §6.7 and §14 — not hidden)
+- Audio store (`public/audio/`): **482 × MP3 files at original snapshot 2026-09-20; count grows as ingestion scripts run — recount with `Get-ChildItem public/audio/*.mp3`** (coverage gap disclosed in §6.7 and §14 — not hidden; most items still fall back to synthetic audio)
 - Stack: **React 19 + Vite 8 + TypeScript + Tailwind CSS 4 + Web Audio API DSP + Wiktionary/Wikimedia Commons human speech + localStorage analytics**
-- Licence status: **code licence not declared in repository; linguistic/audio data carry third-party copyleft and attribution obligations — see §13. You must attribute before university/Oxford-corpus submission.**
+- Licence status: **code licence not declared in repository; linguistic/audio data carry third-party copyleft and attribution obligations — see §13. You must attribute before any university submission. Not an Oxford University Press product.**
 
 ---
 
 ## Table of Contents
 
+0. [Honesty Statement — What Is Standard vs What Is Author-Made](#0-honesty-statement--what-is-standard-vs-what-is-author-made)
 1. [Abstract](#1-abstract)
 2. [Problem Statement — Why This Exists](#2-problem-statement--why-this-exists)
 3. [Research Questions, Aims, and Learning Outcomes](#3-research-questions-aims-and-learning-outcomes)
@@ -33,18 +36,50 @@
 
 ---
 
+## 0. Honesty Statement — What Is Standard vs What Is Author-Made
+
+This project is a hybrid. The architecture is pedagogically and acoustically legitimate — not random gibberish — but the implementation is an independent prototype. **View difficulty levels and scenario prompts as author-designed practice materials, not an officially accredited test suite.**
+
+### 0.1 What uses a real, recognised standard
+
+**A. Telecommunications & audio engineering**
+
+- **ITU-T narrowband telephony (PSTN, nominal 300–3,400 Hz):** the `landline` preset's 300 Hz high-pass / 3,400 Hz low-pass uses this international standard band. Only the band edges are standard; all other preset numbers are author-tuned (see §0.2).
+- **W3C Web Audio API:** the degradation graph directly implements official `BiquadFilterNode`, `WaveShaperNode`, `ConvolverNode`, and `AnalyserNode` semantics. No custom audio standard is claimed.
+- **Paul Kellett pink-noise filter:** pink noise uses the standard 6-pole Kellett IIR approximation for 1/f noise (coefficients reproduced verbatim in `AudioEngine.ts`).
+- **Signal-to-Noise Ratio (SNR) decibels:** noise gain uses the standard formula `g = 0.35 × 10^(−SNR/20)`, anchored to an **assumed** digital speech reference (~−12 dBFS class). This is a digital-domain calculation, **not** a sound-pressure-level calibration with measurement equipment.
+
+**B. Linguistics & language learning**
+
+- **CEFR (Council of Europe, Companion Volume 2020):** A1–C1 labels are used only as familiar organisation bins. They are **CEFR-inspired, author-assigned strata — not CEFR-certified, not Rasch-calibrated, not examiner-moderated**.
+- **IPA (International Phonetic Alphabet):** phoneme contrasts are documented with standard IPA symbols (e.g. /ɪ/ vs /iː/, /θ/ vs /s/). Only curated/minimal-pair subsets have trustworthy IPA; 3,269 `general_vocab` items carry placeholder `/{word}/` (see §14).
+- **Speech-perception research:** exercise design is informed by Flege's Speech Learning Model (SLM), Best's Perceptual Assimilation Model (PAM-L2), and Functional Load Theory (prioritising high-cost confusions such as teen vs ty numbers). These theories motivate the design; they do not validate this app's efficacy.
+
+**C. Accessibility & web standards**
+
+- **WCAG 2.2 AA intent (not certified):** 44–50 px targets, high-contrast focus rings, screen-reader text, keyboard operation, and Calm View aim at WCAG 2.2 AA. No independent accessibility audit has been performed; do not cite this app as WCAG-certified.
+
+### 0.2 What is just the developer's own head (author-crafted heuristics)
+
+1. **CEFR / "Oxford" levels are author-assigned, not certified.** Not an Oxford University Press product, not OOPT-certified. Words were binned to A1–C1 by Google-10K frequency rank plus developer intuition and curation, not standardised testing. C2 was deliberately omitted because there was no objective way to classify it here.
+2. **Preset settings were tuned by ear, not calibrated equipment.** While 300–3,400 Hz is standard telephone bandwidth, values such as "28% packet loss", "drive = 45", "reverbWet = 0.38" are arbitrary values chosen because they "sounded like an office intercom / station PA". The packet-loss chopper uses plain `Math.random()`, **not** a standard telecom loss model such as Gilbert-Elliott burst loss, and uses no fixed seed, so repeats are not acoustically identical.
+3. **Template-generated scenarios.** The 1,020 scenarios (airport, subway, clinic, etc.) are programmatic "Mad Libs" from author-written templates with `{CITY}`, `{GATE}`, `{TIME}` token substitution in `generate_massive_corpus.js`. They were not vetted by professional language examiners, distractor plausibility was not human-rated, and some option lists were padded with `"None of the above"` / `"Option not specified"`.
+4. **Synthetic audio fallback formula.** For the ~3,100 words where real recordings are missing at snapshot time, the fallback tone is a developer-invented equation combining sine waves (140 Hz + 700/1,700/2,800 Hz partials with attack/release envelope) to vaguely mimic vocal-tract formants. It preserves duration/envelope cues but **contains no lexical content and is not a human voice**. The UI does not currently badge synthetic vs human playback.
+
+---
+
 ## 1. Abstract
 
-Classroom listening materials are almost always **pristine**: studio-recorded, close-miked, noise-free, full-bandwidth (20 Hz–20 kHz), with careful enunciation. Real-world listening is the opposite: a gate-change announcement band-limited to 300–3,400 Hz through a reverberant PA horn at +5 dB SNR; a room number through a crackling intercom with 28% packet loss; a dosage or platform number through a walkie-talkie in hard clipping at 0 dB SNR; a phone number through a weak cell link with random 30–90 ms dropouts.
+Classroom listening materials are almost always **pristine**: studio-recorded, close-miked, noise-free, full-bandwidth (20 Hz–20 kHz), with careful enunciation. Real-world listening is the opposite: a gate-change announcement band-limited to 300–3,400 Hz through a reverberant PA horn at +5 dB SNR; a room number through a crackling intercom with author-set 28% packet loss; a dosage or platform number through a walkie-talkie in hard clipping at 0 dB SNR; a phone number through a weak cell link with random 30–90 ms dropouts. The numbers after this sentence are the app's author-chosen preset values, not lab-measured channel specifications.
 
-This project closes that **ecological-validity gap**. It is a client-side web application that:
+This prototype attempts to narrow that **ecological-validity gap**. It is a client-side web application that:
 
-1. Serves **real native-speaker recordings** (Wikimedia Commons / Wiktionary-sourced, MP3-normalised) for single-word stimuli, annotated with **IPA, part of speech, CEFR/Oxford level (A1–C1), minimal-pair contrast, and target phoneme**.
-2. Passes that pristine audio at playback time through a **fully disclosed, real-time Web Audio DSP graph** that simulates five calibrated degraded channels plus a fully adjustable custom channel.
-3. Trains and measures three skills: **(a) minimal-pair phoneme discrimination, (b) dictation under degradation, (c) situated comprehension under stress** (multiple-choice over realistic transit, campus, workplace, and emergency scenarios).
-4. Tracks **per-phoneme, per-mode, and per-CEFR-level accuracy, streaks, and item history entirely on-device**, with an instant **Clean Audio A/B bypass** for perceptual realignment and a low-distraction **Calm View** plus **Read Aloud** for accessibility.
+1. Serves **partially real native-speaker recordings** (Wikimedia Commons / Wiktionary-sourced, MP3-normalised) for single-word stimuli, annotated with **IPA (trustworthy only for curated/minimal-pair subsets; placeholder `/{word}/` elsewhere), part of speech (often placeholder `noun`), author-assigned A1–C1 level (not certified), minimal-pair contrast, and target phoneme**.
+2. Passes that audio at playback time through a **fully disclosed, real-time Web Audio DSP graph** that simulates five author-tuned degraded channels (not lab-calibrated, tuned by ear) plus a fully adjustable custom channel.
+3. Trains and measures three skills: **(a) minimal-pair phoneme discrimination, (b) dictation under degradation, (c) situated comprehension under stress** (multiple-choice over template-generated transit, campus, workplace, and emergency scenarios — programmatic Mad Libs, not examiner-vetted).
+4. Tracks **per-phoneme, per-mode, and per-author-assigned-level accuracy, streaks, and item history entirely on-device**, with an instant **Clean Audio A/B bypass** for perceptual realignment and a low-distraction **Calm View** plus **Read Aloud** for accessibility.
 
-The shipped corpus contains **3,600 vocabulary entries** (stratified A1: 700, A2: 750, B1: 800, B2: 700, C1: 650; of which 331 are minimal-pair entries and 3,269 are general-vocabulary entries) and **1,020 comprehension scenarios** (A1: 136, A2: 136, B1: 221, B2: 306, C1: 221). Audio coverage at time of writing is **482 MP3s**; every missing file falls back at runtime to a disclosed synthetic buffer (see §7.9 and §14). Nothing about this asymmetry is concealed: the counts, the fallback synthesis equation, and the template-generation method are all documented below so that a university examiner or Oxford-corpus reviewer can reproduce and critique them.
+The shipped corpus contains **3,600 vocabulary entries** (author-binned A1: 700, A2: 750, B1: 800, B2: 700, C1: 650; of which 331 are minimal-pair entries and 3,269 are general-vocabulary entries) and **1,020 template-generated practice scenarios** (A1: 136, A2: 136, B1: 221, B2: 306, C1: 221). Audio coverage at original snapshot 2026-09-20 was **482 MP3s**; every missing file falls back at runtime to a disclosed developer-invented synthetic buffer (harmonic sine stack, no lexical content — see §6.7, §7.3 and §14). Nothing about this asymmetry is concealed: the counts, the fallback synthesis equation, and the template-generation method are all documented below so that an independent reviewer can reproduce and critique them.
 
 ---
 
@@ -56,7 +91,7 @@ A React + Web Audio application that makes clean study audio **deliberately hard
 
 ### 2.2 The HOW (one paragraph)
 
-The browser fetches `/data/vocabulary.json` and `/audio/{word}.mp3`, decodes to an `AudioBuffer`, and routes it through `AudioEngine.play(url, config)`: an optional packet-loss chopper → high-pass biquad → low-pass biquad → WaveShaper saturation → dry/wet convolver reverb → master gain + `AnalyserNode`, with a parallel band-limited noise loop mixed at a calibrated SNR. A `clean: true` flag bypasses the entire chain for A/B comparison. Answers are scored client-side (exact match plus a disclosed number-word synonym table), and all analytics persist in `localStorage`.
+The browser fetches `/data/vocabulary.json` and `/audio/{word}.mp3`, decodes to an `AudioBuffer`, and routes it through `AudioEngine.play(url, config)`: an optional packet-loss chopper (`Math.random()`, unseeded — not Gilbert-Elliott) → high-pass biquad → low-pass biquad → WaveShaper saturation → dry/wet convolver reverb → master gain + `AnalyserNode`, with a parallel band-limited noise loop mixed at an author-scaled digital-domain SNR (formula-standard, SPL-uncalibrated). A `clean: true` flag bypasses the entire chain for A/B comparison. Answers are scored client-side (exact match plus a disclosed number-word synonym table), and all analytics persist in `localStorage`.
 
 ### 2.3 The WHY
 
@@ -71,22 +106,22 @@ The browser fetches `/data/vocabulary.json` and `/audio/{word}.mp3`, decodes to 
 
 ### 3.1 Research questions
 
-- **RQ1 (discrimination):** Does repeated degraded-channel minimal-pair practice improve discrimination of targeted contrasts (e.g. `/ɪ/–/iː/`, `/θ/–/s/`, `/tiːn/–/ti/`) as measured by per-phoneme accuracy at fixed SNR?
+- **RQ1 (discrimination):** Does repeated degraded-channel minimal-pair practice improve discrimination of targeted contrasts (e.g. `/ɪ/–/iː/`, `/θ/–/s/`, `/tiːn/–/ti/`) as measured by per-phoneme accuracy at fixed digital-domain SNR? (Untested — no efficacy trial has been run.)
 - **RQ2 (robustness):** Does dictation accuracy degrade monotonically with decreasing SNR / narrowing bandwidth / increasing packet loss, and does the slope flatten with practice?
-- **RQ3 (transfer):** Does single-word training transfer to situated scenario comprehension (whole-announcement multiple choice) at the same CEFR level?
-- **RQ4 (calibration):** Can the Clean Audio A/B bypass accelerate perceptual recalibration versus degraded-only repetition?
-- **RQ5 (level validity):** Do A1→C1 accuracy gradients replicate expected CEFR difficulty ordering under identical acoustic conditions?
+- **RQ3 (transfer):** Does single-word training transfer to keyword-in-context scenario comprehension (scenario text + single-word/fallback audio, multiple choice) at the same author-assigned level? Note: scenarios are not whole-announcement connected speech — see §6.6.
+- **RQ4 (perceptual recalibration, not equipment calibration):** Can the Clean Audio A/B bypass accelerate perceptual recalibration versus degraded-only repetition?
+- **RQ5 (level ordering — author bins only):** Do A1→C1 accuracy gradients follow the app's author-assigned difficulty ordering under identical acoustic conditions? This would test internal consistency of author bins, not CEFR validity.
 
 The app does not itself run the RCT — it **instruments** the data (per-phoneme, per-level, per-preset history) that would answer these questions. See §15 for the proposed design.
 
 ### 3.2 Aims
 
-- Provide ≥3,000 CEFR-stratified word stimuli with IPA and human audio provenance.
-- Provide ≥1,000 situated scenarios across six real-world domains (airport, rail/subway, café/retail, campus, workplace, emergency/utilities).
-- Simulate five ecologically sampled channels with physically interpretable parameters.
+- Provide ≥3,000 author-stratified word stimuli with IPA (curated subsets only) and partial human audio provenance (remainder synthetic fallback).
+- Provide ≥1,000 template-generated practice scenarios across six real-world domains (airport, rail/subway, café/retail, campus, workplace, emergency/utilities) — unvetted Mad Libs for practice, not validated test items.
+- Simulate five author-tuned degraded channels that roughly evoke real channels, with physically interpretable but uncalibrated parameters.
 - Measure learning without a server (privacy-preserving, offline-capable after first load).
 
-### 3.3 CEFR-mapped learning outcomes
+### 3.3 Author-assigned level descriptors (not CEFR-certified)
 
 | Level | Label (this app) | Learner will be able to … under degradation |
 |---|---|---|
@@ -100,13 +135,15 @@ C2 is **deliberately excluded**: the source wordlists (Google 10K + curated acad
 
 ---
 
-## 4. Theoretical Foundations
+## 4. Theoretical Foundations (standards that inform us vs claims we do not make)
+
+Real standards reused here: CEFR 2020 bins (organisation only), IPA symbols, ITU-T 300–3,400 Hz band edges, W3C Web Audio nodes, Kellett pink-noise filter, standard SNR decibel math, and WCAG 2.2 AA intent. None of these certifies this app. Preset values, level assignments, scenarios, and synthetic audio below are author heuristics (see §0.2 and §14).
 
 1. **L2 speech perception (Flege SLM; Best PAM-L2).** Non-native listeners assimilate L2 contrasts to L1 categories. Minimal-pair training with immediate feedback and clean-bypass realignment directly targets category boundary formation.
 2. **Functional load.** Contrasts are prioritised by communicative cost: teen/ty stress, `/θ/–/s/–/f/`, `/s/–/z/` voicing, `/l/–/r/`, `/v/–/w/` — all heavily represented because confusing them breaks numbers, transit, and safety messages.
-3. **CEFR (Council of Europe, Companion Volume 2020) + Oxford Online Placement Test (OOPT) banding.** Levels A1–C1 in `src/data/oxfordLevels.ts` are pedagogical strata, not a claim of Oxford University Press certification. The mapping is: A1 everyday objects/numbers; A2 schedules/travel/time; B1 school/travel announcements; B2 fast/noisy announcements; C1 subtle distinctions and rapid natural speech. Reviewers should treat these as author-assigned strata (documented per item in `level` fields), not externally moderated judgements.
-4. **Ecological validity (Bronfenbrenner; Lincoln & Guba).** Practice stimuli embed the noise, reverberation, and dropouts of the target domain rather than idealising them away.
-5. **Cognitive load + Universal Design for Learning.** Calm Mode (hides the animated waveform), Read Aloud (SpeechSynthesis), 44–50 px targets, focus rings, and keyboard shortcuts implement multiple means of representation and action.
+3. **CEFR (Council of Europe, Companion Volume 2020) + Oxford-style banding (naming only).** Levels A1–C1 in `src/data/oxfordLevels.ts` are author-assigned by Google-10K frequency rank + developer intuition/curation, not Rasch-calibrated, not examiner-moderated, not Oxford University Press-certified, not OOPT-certified. The mapping is: A1 everyday objects/numbers; A2 schedules/travel/time; B1 school/travel announcements; B2 fast/noisy announcements; C1 subtle distinctions and rapid natural speech. Reviewers must treat these as author-assigned strata (documented per item in `level` fields), not externally validated judgements. C2 omitted deliberately — no objective basis to classify it here.
+4. **Ecological-validity aim (Bronfenbrenner; Lincoln & Guba).** Practice stimuli attempt to evoke the noise, reverberation, and dropouts of the target domain rather than idealising them away — but preset values were tuned by ear, not measured in the field.
+5. **Cognitive load + Universal Design for Learning (aim, not certification).** Calm Mode (hides the animated waveform), Read Aloud (SpeechSynthesis), 44–50 px targets, focus rings, and keyboard shortcuts aim at multiple means of representation and action and at WCAG 2.2 AA intent. No accessibility audit has been performed.
 6. **Desirable difficulties (Bjork).** Controlled degradation + spaced shuffling + immediate clean-bypass feedback is intended to make retrieval effortful but recoverable.
 
 ---
@@ -115,30 +152,30 @@ C2 is **deliberately excluded**: the source wordlists (Google 10K + curated acad
 
 **It is:**
 
-- A degraded-listening trainer + instrumented corpus + reproducible DSP + build pipelines.
+- An independent degraded-listening practice prototype + author-built corpus + disclosed DSP + build pipelines.
 - Fully client-side after asset load; no account, no server-side grading, no network telemetry.
 
 **It is not:**
 
-- Not an Oxford University Press product and not OOPT-certified. “Oxford Levels” here means CEFR-style A1–C1 strata labelled for study organisation, with per-level counts disclosed.
+- Not an Oxford University Press product and not OOPT-certified, not CEFR-certified, not university-accredited. “Oxford Levels” here means author-assigned Oxford-style A1–C1 bins labelled for study organisation only, with per-level counts disclosed. Do not cite as certified proficiency levels.
 - Not a speech recogniser or pronunciation grader; it scores typed/selected answers, not learner speech.
 - Not a clinical audiology device; no hearing diagnosis is performed or implied.
 - Not a Gemini AI application at present despite `metadata.json` declaring `MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API` and `.env.example` defining `GEMINI_API_KEY`/`APP_URL`. **No code path in `src/` calls Gemini at time of writing.** That capability flag is scaffold boilerplate and must not be cited as an AI feature. This is disclosed here precisely so examiners are not misled.
 
 ---
 
-## 6. Corpus Specification — The Oxford-Levelled Listening Corpus
+## 6. Corpus Specification — The Author-Stratified Practice Corpus (Oxford-Style Labels Only)
 
-### 6.1 Snapshot (measured 2026-09-20, not estimated)
+### 6.1 Snapshot (measured 2026-09-20, not estimated — audio count is stale, recount now)
 
-Measured with `python -c "import json…" public/data/vocabulary.json` and `Get-ChildItem public/audio`:
+Measured with `python -c "import json…" public/data/vocabulary.json` and `Get-ChildItem public/audio` on 2026-09-20:
 
 - `version`: `"2.0.0"`, `generatedAt`: ISO timestamp at generation time.
 - **Words: 3,600. Scenarios: 1,020. File size: 1,330,524 bytes.**
-- Word levels: **A1 700, A2 750, B1 800, B2 700, C1 650.**
-- Scenario levels: **A1 136, A2 136, B1 221, B2 306, C1 221.**
+- Word levels (author-assigned, not certified): **A1 700, A2 750, B1 800, B2 700, C1 650.**
+- Scenario levels (author-assigned, not certified): **A1 136, A2 136, B1 221, B2 306, C1 221.**
 - Word categories (shipped generator vocabulary): **`minimal_pair` 331, `general_vocab` 3,269.** Earlier pipelines used finer categories (`number`, `date_time`, `travel_transit`, `emergency`, `nouns`, `daily_verbs`); the shipped massive corpus collapses non-pairs to `general_vocab`. The TypeScript type still lists the older union — a known schema drift documented in §14.
-- Audio files present: **482 MP3s** in `public/audio/` (128 kbps, 44.1 kHz, normalised via ffmpeg where ingested through `ingest_audio.js` / `download_missing_audio.js`).
+- Audio files present at snapshot: **482 MP3s** in `public/audio/` (128 kbps, 44.1 kHz, normalised via ffmpeg where ingested through `ingest_audio.js` / `download_missing_audio.js`). Recount now — the directory has grown since the snapshot.
 
 ### 6.2 Provenance — where every byte came from and under what licence
 
@@ -194,16 +231,16 @@ Each pair entry stores `targetPhoneme` as a human string (e.g. `"/tiːn/ vs /ti/
 
 Six template groups in `generate_massive_corpus.js`: **Airport Terminal & Flights; Train & Subway Stations; Café & Restaurant Dining; University & School Campus; Workplace & Professional Calls; Public Services & Emergencies** — each with 3–5 `contextDescription` acoustic scenes and 3–5 item templates. Token slots (`{CITY}`, `{FLIGHT}`, `{NUM1…4}`, `{TIME}`, `{GATE}`, `{MILK}`, `{DISH}`, `{PIN}`, …) are filled deterministically from fixed arrays (`CITIES`, `NAMES`, `TIMES`, `FLIGHTS`, `STATIONS`, …) indexed by scenario counter so regeneration is reproducible. Options are the template’s four distractors with token substitution; if the computed `targetWord` is missing from the list it replaces slot 0, and short lists are padded with `"None of the above"` / `"Option not specified"` — disclosed here because it affects distractor quality (see §14).
 
-The earlier `build_educational_corpus.js` contributes the **30 hand-written educational scenarios** (6 per level, lectures/exams/clinics/evacuations) that remain the highest-quality subset and should be cited as such in any Oxford-corpus submission.
+The earlier `build_educational_corpus.js` contributes the **30 hand-written educational scenarios** (6 per level, lectures/exams/clinics/evacuations) that remain the highest-quality subset and should be cited as such in any university submission (still author-written, not externally moderated).
 
 ### 6.6 How transcripts relate to audio — critical disclosure
 
-Scenario objects carry a full-sentence `transcript` **but their `audioUrl` points to a single-word MP3** (`/audio/{targetWord}.mp3`, or `/audio/scenario_{idx}.mp3` which does not exist on disk for generated scenarios and therefore triggers the synthetic fallback). The app **does not synthesise full-sentence speech**; it plays the target word (or fallback tone-stack, see §7.9) through the degraded chain while displaying the scenario text and question. Any submission must describe this honestly as **keyword-in-context comprehension**, not connected-speech comprehension. Full TTS or recorded sentence audio is listed as future work (§15).
+Scenario objects carry a full-sentence `transcript` **but their `audioUrl` points to a single-word MP3** (`/audio/{targetWord}.mp3`, or `/audio/scenario_{idx}.mp3` which does not exist on disk for generated scenarios and therefore triggers the synthetic fallback). The app **does not synthesise full-sentence speech**; it plays the target word (or fallback tone-stack, see §6.7) through the degraded chain while displaying the scenario text and question. Any submission must describe this honestly as **keyword-in-context comprehension**, not connected-speech comprehension. Full TTS or recorded sentence audio is listed as future work (§15).
 
 ### 6.7 Audio coverage and normalisation
 
 - Ingested audio is converted with `ffmpeg -y -v quiet -i "{temp}" -c:a libmp3lame -b:a 128k -ar 44100 "{target}.mp3"` and accepted only if the output exceeds 1,000 bytes.
-- `GET public/audio/*.mp3 = 482 files` at submission snapshot. The remaining ~3,100 vocabulary items and ~1,020 `scenario_{idx}.mp3` URLs **miss at fetch time** and are served via `AudioEngine.generateSyntheticSpeechBuffer()` — a disclosed harmonic-stack placeholder (140 Hz + 700/1,700/2,800 Hz partials, 50 ms attack / 80 ms release envelope, duration `clamp(0.7–2.0 s, len×0.1+0.4)`), not a human voice. The UI does not badge synthetic vs human playback — a known defect (§14).
+- `GET public/audio/*.mp3 = 482 files` at original snapshot 2026-09-20 (recount now — ingestion scripts keep adding files). The remaining ~3,100 vocabulary items and ~1,020 `scenario_{idx}.mp3` URLs **miss at fetch time** and are served via `AudioEngine.generateSyntheticSpeechBuffer()` — a disclosed developer-invented harmonic-stack placeholder (140 Hz + 700/1,700/2,800 Hz sine partials vaguely mimicking formants, 50 ms attack / 80 ms release envelope, duration `clamp(0.7–2.0 s, len×0.1+0.4)`), not a human voice and containing no lexical content. The UI does not badge synthetic vs human playback — a known defect (§14).
 - Preloading (`audioEngine.preload([current, next])`) warms the current and next item to mask fetch latency.
 
 ---
@@ -220,7 +257,9 @@ File: `src/audio/AudioEngine.ts` (433 lines). No hidden processing: every node, 
 
 `AnalyserNode`: `fftSize = 512`, `smoothingTimeConstant = 0.8`, `frequencyBinCount = 256`. Visualiser reads time-domain bytes each animation frame; when idle it draws a flat baseline.
 
-### 7.2 Preset parameter matrix (exact values from `src/audio/presets.ts`)
+### 7.2 Preset parameter matrix (exact author-tuned values from `src/audio/presets.ts` — tuned by ear, not lab-calibrated)
+
+> Only the `landline` 300–3,400 Hz band edges reuse a real standard (ITU-T narrowband telephony). Every other number below — drive, SNR, loss %, reverb wet — is an author-chosen heuristic that "sounded right" (e.g. drive 45, 28% loss for intercom). Do not cite these as measured channel specifications.
 
 | Preset (`presetId`) | Display name | HP (Hz) | LP (Hz) | Drive 0–100 | SNR (dB) | Noise | Loss % | Reverb wet |
 |---|---|---|---|---|---|---|---|---|
@@ -231,15 +270,15 @@ File: `src/audio/AudioEngine.ts` (433 lines). No hidden processing: every node, 
 | `walkie_talkie` | Walkie-Talkie | 500 | 2,500 | 60 | 0 | radio_hum | 12 | 0.04 |
 | `custom` | Custom Settings | 300 | 3,400 | 20 | 10 | pink | 10 | 0.10 |
 
-Pedagogical reading: `landline` = classic 300–3,400 Hz telephone band; `walkie_talkie` = narrowest band + hardest clipping + 0 dB SNR; `train_pa` = widest reverb (0.38) + low rumble; `intercom_staccato` = heaviest packet loss (28%); `cellphone` = gentlest (18 dB SNR, 4% loss). Custom sliders expose HP 50–800 Hz, LP 1,500–8,000 Hz, SNR 0–30 dB (UI displays `Level {30 − snrDb}`), drive 0–100, and five noise-type buttons (None/Cafe Chatter/Soft Hiss/Quiet Hum/Low Rumble). Any slider edit retags the config to `presetId: 'custom'`, `name: 'Custom'`.
+Pedagogical reading (author intent, not measurement): `landline` = standard 300–3,400 Hz telephone band + faint hum; `walkie_talkie` = narrowest band + hardest clipping + 0 dB SNR; `train_pa` = widest reverb (0.38) + low rumble; `intercom_staccato` = heaviest packet loss (28%); `cellphone` = gentlest (18 dB SNR, 4% loss). Custom sliders expose HP 50–800 Hz, LP 1,500–8,000 Hz, SNR 0–30 dB (UI displays `Level {30 − snrDb}`), drive 0–100, and five noise-type buttons (None/Cafe Chatter/Soft Hiss/Quiet Hum/Low Rumble). Any slider edit retags the config to `presetId: 'custom'`, `name: 'Custom'`.
 
 ### 7.3 Node-by-node mathematics
 
-1. **Packet-loss chopper.** Interprets `packetLossRate` clamped to 0–80%. Skips the first 80 ms (attack preservation), then walks a cursor: at each step draws `rand×100 < rate×1.5`; on a hit schedules a 30–90 ms dropout (`0.03 + rand×0.06`) with **2 ms linear micro-fades** (`1.0 → 0.001 → hold → 1.0`) to avoid clicks, then advances `drop + 0.08 + rand×0.12`; otherwise advances `0.06 + rand×0.08`. Deterministic seed is **not** used — each playback differs, disclosed as a repeatability limit.
+1. **Packet-loss chopper (author heuristic, not a telecom model).** Interprets `packetLossRate` clamped to 0–80%. Skips the first 80 ms (attack preservation), then walks a cursor: at each step draws `rand×100 < rate×1.5`; on a hit schedules a 30–90 ms dropout (`0.03 + rand×0.06`) with **2 ms linear micro-fades** (`1.0 → 0.001 → hold → 1.0`) to avoid clicks, then advances `drop + 0.08 + rand×0.12`; otherwise advances `0.06 + rand×0.08`. Uses plain `Math.random()` with no seed — **not** Gilbert-Elliott burst loss or any calibrated loss model. Deterministic seed is **not** used — each playback differs, disclosed as a repeatability limit.
 2. **Biquad band-limiting.** `highpass.frequency = highPassHz, Q = 1.0`; `lowpass.frequency = lowPassHz, Q = 1.0`. This is what removes `/s/` sibilance energy (4–8 kHz) under `landline`/`walkie_talkie` settings.
 3. **WaveShaper saturation.** 44,100-sample sigmoid curve; `k = max(0, drive)`; identity pass-through when `k ≤ 0`; otherwise `curve[i] = ((3+k)·x·20·(π/180)) / (π + k·|x|)`, `oversample = '4x'`. Higher drive = harder mic-diaphragm clipping.
 4. **Reverberation.** Synthetic stereo impulse `generateImpulseResponse(ctx, 1.6 s, decay 2.0)`: `length = rate×1.6`, each channel `noise×(1−t)^2`. Applied only when `reverbWet > 0.02`: `dry = max(0.2, 1−wet×0.6)`, `wet = min(1.2, wet×1.5)` through a `ConvolverNode`.
-5. **SNR noise mixer.** Skipped when `noiseType === 'off'` or `snrDb ≥ 30`. Noise loop (5 s seamless buffer) → `bandpass.frequency = (HP+LP)/2, Q = 0.5` → gain `g = max(0.005, 0.35 × 10^(−snr/20))` where **0.35 is the assumed speech reference RMS (−12 dBFS class)**. Worked example: at 0 dB SNR, `g = 0.35`; at 12 dB, `g ≈ 0.088`; at 18 dB, `g ≈ 0.044`.
+5. **SNR noise mixer (standard formula, assumed reference, SPL-uncalibrated).** Skipped when `noiseType === 'off'` or `snrDb ≥ 30`. Noise loop (5 s seamless buffer) → `bandpass.frequency = (HP+LP)/2, Q = 0.5` → gain `g = max(0.005, 0.35 × 10^(−snr/20))` where **0.35 is the assumed speech reference RMS (−12 dBFS class, not a measured SPL)**. Worked example: at 0 dB SNR, `g = 0.35`; at 12 dB, `g ≈ 0.088`; at 18 dB, `g ≈ 0.044`. Reported SNRs are digital-domain calculations, not sound-pressure-level measurements.
 6. **Noise synthesis algorithms.** White: uniform `±0.5`. Pink: Paul Kellett 6-pole filter bank (`b0…b6` coefficients as coded, `×0.06` scale). Radio hum: 60 Hz×0.4 + 120 Hz×0.2 + hiss×0.3, all `×0.35`. Subway rumble: leaky integrator `y += 0.04·(white−y)`-style accumulator (`lastVal×0.96 + white×0.04`, `×2.5`). Buffers cached in `noiseBuffers`.
 7. **Playback rate.** `source.playbackRate.value = 1.0 | 0.8` (Normal/Slow toggle). Note: rate change without pitch correction lowers formants — disclosed as a scaffold, not a time-stretch algorithm.
 8. **Lifecycle.** `play()` calls `stop()` first (kills prior source + noise), lazily creates/resumes `AudioContext` (autoplay-policy compliant), `fetch → decodeAudioData` with cache in `bufferCache`, `source.onended` stops noise and fires the UI callback. `stop()` is exception-safe against double-stop.
@@ -390,7 +429,7 @@ Keyboard map: `Space` play degraded · `C` clean · `1`–`4` choose · `Enter` 
 ## 13. Ethics, Privacy, Accessibility, Licensing, and Attribution
 
 - **Human subjects & privacy.** No login, no telemetry, no cookies, no analytics endpoint. All stats remain in the user’s own `localStorage` and can be wiped in one tap. Classroom deployments should still obtain institutional consent for any screen-recorded or exported history used in research.
-- **Accessibility (WCAG 2.2 AA intent).** Calm Mode, Read Aloud (`rate 0.88`, `en-US`), keyboard-complete operation, ARIA `tablist`/`radiogroup`, labelled canvases/sections, 44–50 px targets, Apple-HIG focus rings, non-colour-only feedback (icons + words + percentages). No vestibular-risk animation beyond the waveform, which Calm Mode removes.
+- **Accessibility (WCAG 2.2 AA intent, not certified).** Calm Mode, Read Aloud (`rate 0.88`, `en-US`), keyboard-complete operation, ARIA `tablist`/`radiogroup`, labelled canvases/sections, 44–50 px targets, Apple-HIG focus rings, non-colour-only feedback (icons + words + percentages). No independent accessibility audit has been performed; do not cite as WCAG-certified. No vestibular-risk animation beyond the waveform, which Calm Mode removes.
 - **Licensing — read before submitting to a university or corpus registry.** (a) This repository declares **no code licence file**; obtain author permission or add one (MIT/Apache-2.0 recommended) before redistribution. (b) Wiktionary IPA/audio metadata: **CC BY-SA 4.0 — credit “Wiktionary contributors” with hyperlink and licence notice, ShareAlike on adaptation.** (c) Commons audio: **per-file licences vary; bulk MP3 redistribution without per-file credit violates the licences** — generate an attribution appendix from the Commons `imageinfo` `extmetadata` before publishing the `public/audio/` bundle. (d) Google-10K list: research-use; confirm policy for commercial use. (e) Fonts/deps: OFL/MIT/Apache as installed. (f) This project is **not endorsed by, affiliated with, or certified by Oxford University Press, the CEFR Council of Europe, Wiktionary, or Wikimedia.**
 - **Corpus-review suitability.** Suitable as a *study corpus + trainer* with disclosed synthetic/template components (§6.6, §14). Not suitable as a *reference phonetic corpus* until per-file speaker/dialect/licence metadata and human validation of scenario transcripts are added (§15).
 
@@ -398,13 +437,13 @@ Keyboard map: `Space` play degraded · `C` clean · `1`–`4` choose · `Enter` 
 
 ## 14. Limitations, Threats to Validity, and Known Defects — Nothing Hidden
 
-1. **Audio coverage gap.** Only 482 of ~4,600 referenced audio URLs exist on disk. The rest invoke the synthetic harmonic-stack fallback, which preserves duration/envelope cues but **no lexical content**. Any accuracy claim on uncovered items measures interface behaviour, not listening. Mitigation: run `ingest` + `download_missing_audio`, or gate the corpus with `sync_vocab.cjs`, before controlled studies.
+1. **Audio coverage gap.** Only 482 of ~4,620 referenced audio URLs existed on disk at original snapshot 2026-09-20 (recount before citing — ingestion keeps adding files). The rest invoke the developer-invented synthetic harmonic-stack fallback (140 Hz + 700/1,700/2,800 Hz sines), which preserves duration/envelope cues but **no lexical content**. Any accuracy claim on uncovered items measures interface behaviour, not listening. Mitigation: run `ingest` + `download_missing_audio`, or gate the corpus with `sync_vocab.cjs`, before controlled studies.
 2. **Scenario audio ≠ transcript.** Full-sentence transcripts have no matching sentence audio; playback is keyword/fallback only. Do not describe scenarios as connected-speech tests.
-3. **Template artefacts.** Generated scenarios reuse phrasing; some option sets required padding (`None of the above`) and some `audioUrl`s (`scenario_{idx}.mp3`) are intentionally non-existent placeholders. Distractor plausibility was not human-rated.
+3. **Template artefacts.** Generated scenarios reuse phrasing; some option sets required padding (`None of the above`) and some `audioUrl`s (`scenario_{idx}.mp3`) are intentionally non-existent placeholders. Distractor plausibility was not human-rated. Scenarios are unvetted Mad Libs from `{CITY}`, `{GATE}`, `{TIME}` token substitution, not examiner-written items.
 4. **Placeholder phonetics for general vocab.** All 3,269 `general_vocab` items carry `ipa: "/{word}/"` and `partOfSpeech: "noun"` regardless of truth. Only curated/minimal-pair subsets have trustworthy IPA/POS. The `category` union in `src/types/index.ts` still lists the old fine-grained tags while the shipped data uses `general_vocab` — schema drift that will fail strict validators.
-5. **Non-deterministic degradation.** Packet-loss dropouts use `Math.random()` per playback with no seed; identical “trials” are not acoustically identical. IR noise is likewise generated once per context from `Math.random()`.
-6. **Unvalidated difficulty strata.** A1–C1 labels are author-assigned by wordlist rank/curation, not Rasch-calibrated or examiner-moderated. C2 absent by design.
-7. **No adaptive sequencing, noefficacy trial, no reliability stats.** Shuffling is uniform-random; no SRS, no IRT, no Cronbach’s α / test–retest has been computed. The stats drawer is descriptive, not psychometrically validated.
+5. **Non-deterministic degradation.** Packet-loss dropouts use plain `Math.random()` per playback with no seed — not Gilbert-Elliott or any standard burst-loss model; identical “trials” are not acoustically identical. IR noise is likewise generated once per context from `Math.random()`.
+6. **Unvalidated difficulty strata.** A1–C1 labels are author-assigned by Google-10K frequency rank + developer intuition/curation, not Rasch-calibrated or examiner-moderated. C2 absent by design because there was no objective basis to classify it.
+7. **No adaptive sequencing, no efficacy trial, no reliability stats.** Shuffling is uniform-random; no SRS, no IRT, no Cronbach’s α / test–retest has been computed. The stats drawer is descriptive, not psychometrically validated.
 8. **Residual scaffold.** `express`, `@google/genai`, `motion`, `canvas-confetti` are installed but unwired; `metadata.json`’s Gemini capability and `.env.example`’s keys are inert. `clean` script uses POSIX `rm` (breaks on stock Windows PowerShell). `generate_massive_corpus.js` requires network for the Google-10K fetch and silently falls back to offline pairs if it fails.
 9. **Browser variance.** Convolver/WaveShaper/decoder behaviour differs across browsers; reported SNRs are digital-domain calculations relative to an assumed 0.35 speech RMS, not sound-pressure-level measurements. No hearing-safety limiter beyond `masterGain = 1.0` is implemented — keep device volume moderate with headphones.
 
@@ -412,7 +451,7 @@ Keyboard map: `Space` play degraded · `C` clean · `1`–`4` choose · `Enter` 
 
 ## 15. Evaluation Plan and Future Work
 
-Proposed within-subjects study: stratified A1–C1 learners × 5 presets × 3 modes, counterbalanced, with pre/post clean-vs-degraded minimal-pair probes at fixed SNRs (18/12/5/2/0 dB), retention at 1 week, and transfer to held-out scenarios; primary endpoints per-phoneme Δaccuracy and SNR-slope flattening; analysis by mixed-effects logistic regression with random intercepts for learner and item. Power from pilot drawer data (export `localStorage` JSON).
+Proposed within-subjects study: learners grouped by author-assigned A1–C1 practice levels × 5 author-tuned presets × 3 modes, counterbalanced, with pre/post clean-vs-degraded minimal-pair probes at fixed digital-domain SNRs (18/12/5/2/0 dB), retention at 1 week, and transfer to held-out scenarios; primary endpoints per-phoneme Δaccuracy and SNR-slope flattening; analysis by mixed-effects logistic regression with random intercepts for learner and item. Power from pilot drawer data (export `localStorage` JSON). This study has not been run; no efficacy claim is made.
 
 Roadmap, in priority order: (a) per-file speaker/dialect/licence attribution roll + human IPA/POS audit; (b) full-sentence recorded or consented-TTS scenario audio replacing keyword playback; (c) seeded-PRNG “frozen trial” mode for replicability; (d) adaptive scheduler (IRT/SRS) + reliability reporting; (e) C2 stratum only after external moderation; (f) server-optional sync with E2E encryption; (g) ESLint + unit/integration tests for scoring, shuffling, and DSP math; (h) SPL-calibrated headphone profiles and safe-listening limiter.
 
@@ -420,16 +459,18 @@ Roadmap, in priority order: (a) per-file speaker/dialect/licence attribution rol
 
 ## 16. References
 
-- Council of Europe. (2020). *Common European Framework of Reference for Languages: Learning, Teaching, Assessment — Companion Volume.* Council of Europe Publishing.
-- Oxford University Press / Oxford Online Placement Test (OOPT) — CEFR banding guidance (levels A1–C1 referenced for strata naming only; no certification claimed).
-- Flege, J. E. Speech Learning Model (SLM); Best, C. T. Perceptual Assimilation Model for L2 (PAM-L2).
+- Council of Europe. (2020). *Common European Framework of Reference for Languages: Learning, Teaching, Assessment — Companion Volume.* Council of Europe Publishing. (Used for familiar A1–C1 bin names only; no certification claimed.)
+- Oxford University Press / Oxford Online Placement Test (OOPT) — CEFR banding guidance (levels A1–C1 referenced for strata naming only; no certification, affiliation, or endorsement claimed).
+- ITU-T narrowband telephony (PSTN, nominal 300–3,400 Hz, cf. G.711) — band edges reused for `landline` preset only; other preset values are author-tuned.
+- W3C. *Web Audio API Specification* (`BiquadFilterNode`, `WaveShaperNode`, `ConvolverNode`, `AnalyserNode`).
+- Paul Kellett pink-noise filter coefficients (6-pole IIR 1/f approximation, as implemented).
+- Flege, J. E. Speech Learning Model (SLM); Best, C. T. Perceptual Assimilation Model for L2 (PAM-L2) — design motivation only, not validation of this app.
 - Ladefoged, P., & Johnson, K. *A Course in Phonetics* (IPA conventions, functional load).
 - Bjork, R. A., & Bjork, E. L. Desirable difficulties; Sweller, J. Cognitive Load Theory.
-- CAST. *Universal Design for Learning Guidelines*; W3C. *Web Content Accessibility Guidelines (WCAG) 2.2.*
-- Paul Kellett pink-noise filter coefficients (as implemented); Web Audio API W3C specification (`BiquadFilterNode`, `WaveShaperNode`, `ConvolverNode`, `AnalyserNode`).
+- CAST. *Universal Design for Learning Guidelines*; W3C. *Web Content Accessibility Guidelines (WCAG) 2.2* (intent only, no certification).
 - Data sources: English Wiktionary (CC BY-SA 4.0); Wikimedia Commons (per-file licences); first20hours/google-10000-english (GitHub); Plus Jakarta Sans (OFL 1.1).
 
-Suggested citation for this system: *Listening Practice — Acoustic Ear Degraded-Speech Trainer, corpus v2.0.0 (3,600 words; 1,020 scenarios; 482 MP3s at snapshot), React/Web-Audio implementation, 2026. Wiktionary/Commons audio © their contributors under CC BY-SA/CC0/GFDL as applicable.*
+Suggested citation for this system: *Listening Practice — Acoustic Ear Degraded-Speech Practice Prototype, corpus v2.0.0 (3,600 words; 1,020 template-generated scenarios; 482 MP3s at original 2026-09-20 snapshot), React/Web-Audio implementation, 2026. Independent prototype, not OUP/CEFR-certified. Wiktionary/Commons audio © their contributors under CC BY-SA/CC0/GFDL as applicable.*
 
 ---
 
@@ -472,9 +513,9 @@ SNR (signal-to-noise ratio, dB); HP/LP (high-/low-pass cutoff); WaveShaper drive
 
 ### Appendix F — Version and reproduction record
 
-- Corpus snapshot: `version 2.0.0`, 3,600 words, 1,020 scenarios, 1,330,524-byte `vocabulary.json`, 482 MP3s, measured 2026-09-20 via `python … json.load` + `Get-ChildItem public/audio`.
+- Corpus snapshot: `version 2.0.0`, 3,600 words, 1,020 template-generated scenarios, 1,330,524-byte `vocabulary.json`, 482 MP3s, measured 2026-09-20 via `python … json.load` + `Get-ChildItem public/audio`. Recount before citing — audio count grows as ingestion runs.
 - Generator: `node scripts/generate_massive_corpus.js` (minified output). Curated predecessor: `node scripts/build_educational_corpus.js` (pretty-printed, 30 hand-written scenarios).
 - Reproduce counts any time with the one-liner in §6.1. Back up `vocabulary.json` before re-running any writer script.
 - Git history at writing: `08d04af feat: initial project scaffold` over `e2324c8 Initial commit` (2 commits; corpus and audio largely untracked/parallel to history — confirm `.gitignore` coverage before archiving for review).
 
-*End of README — no aspect of the corpus size, audio coverage, DSP mathematics, scoring rules, data provenance, licensing obligations, or known defects has been knowingly withheld. Where the implementation is provisional (synthetic fallback, template scenarios, placeholder IPA, inert Gemini flag), it is labelled as such above so examiners can judge accordingly.*
+*End of README — no aspect of the corpus size, audio coverage, DSP mathematics, scoring rules, data provenance, licensing obligations, or known defects has been knowingly withheld. Where the implementation is provisional (invented synthetic fallback, template scenarios, placeholder IPA, author-assigned levels, ear-tuned presets, inert Gemini flag), it is labelled as such above so reviewers can judge accordingly. This is an independent practice prototype, not an accredited test suite.*
