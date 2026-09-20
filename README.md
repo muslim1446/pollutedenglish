@@ -8,7 +8,7 @@
 - Internal engine / pipeline name (code, scripts, User-Agent strings): **Acoustic Ear / AcousticEarTrainer**
 - Current shipped corpus (`public/data/vocabulary.json`): **version `2.1.0`, 3,593 words + 1,020 scenarios, educational-safe (7 vulgar slang entries purged 2026-09-20), verified 2026-09-20**
 - Audio store (`public/audio/`): **4,671 × MP3 files (44.1 kHz / 128 kbps / mono, ~240 MB), 100% coverage verified 2026-09-20 — every word and every scenario transcript has real intelligible speech audio; recount with `Get-ChildItem public/audio/*.mp3`** (provenance: pre-existing Wikimedia Commons human recordings kept where present, remainder generated with Edge Neural TTS `en-US-AriaNeural` via `scripts/generate_all_audio_edge.py` — see §6.7; the old sine-tone fallback in code is now a never-triggered last resort)
-- Stack: **React 19 + Vite 8 + TypeScript + Tailwind CSS 4 + Web Audio API DSP + Wiktionary/Wikimedia Commons human speech + localStorage analytics**
+- Stack: **React 19 + Vite 8 + TypeScript + Tailwind CSS 4 + Web Audio API DSP + Wiktionary/Wikimedia Commons human speech + Edge Neural TTS (`en-US-AriaNeural`) + localStorage analytics**
 - Licence status: **code licence not declared in repository; linguistic/audio data carry third-party copyleft and attribution obligations — see §13. You must attribute before any university submission. Not an Oxford University Press product.**
 
 ---
@@ -52,7 +52,7 @@ This project is a hybrid. The architecture is pedagogically and acoustically leg
 **B. Linguistics & language learning**
 
 - **CEFR (Council of Europe, Companion Volume 2020):** A1–C1 labels are used only as familiar organisation bins. They are **CEFR-inspired, author-assigned strata — not CEFR-certified, not Rasch-calibrated, not examiner-moderated**.
-- **IPA (International Phonetic Alphabet):** phoneme contrasts are documented with standard IPA symbols (e.g. /ɪ/ vs /iː/, /θ/ vs /s/). Only curated/minimal-pair subsets have trustworthy IPA; 3,269 `general_vocab` items carry placeholder `/{word}/` (see §14).
+- **IPA (International Phonetic Alphabet):** phoneme contrasts are documented with standard IPA symbols (e.g. /ɪ/ vs /iː/, /θ/ vs /s/). Only curated/minimal-pair subsets have trustworthy IPA; 3,262 `general_vocab` items carry placeholder `/{word}/` (see §14).
 - **Speech-perception research:** exercise design is informed by Flege's Speech Learning Model (SLM), Best's Perceptual Assimilation Model (PAM-L2), and Functional Load Theory (prioritising high-cost confusions such as teen vs ty numbers). These theories motivate the design; they do not validate this app's efficacy.
 
 **C. Accessibility & web standards**
@@ -74,7 +74,7 @@ Classroom listening materials are almost always **pristine**: studio-recorded, c
 
 This prototype attempts to narrow that **ecological-validity gap**. It is a client-side web application that:
 
-1. Serves **partially real native-speaker recordings** (Wikimedia Commons / Wiktionary-sourced, MP3-normalised) for single-word stimuli, annotated with **IPA (trustworthy only for curated/minimal-pair subsets; placeholder `/{word}/` elsewhere), part of speech (often placeholder `noun`), author-assigned A1–C1 level (not certified), minimal-pair contrast, and target phoneme**.
+1. Serves **real intelligible speech audio for every item** (pre-existing Wikimedia Commons / Wiktionary human recordings kept where available, Edge Neural TTS `en-US-AriaNeural` elsewhere — 44.1 kHz / 128 kbps / mono, 0 missing): single-word recordings for vocabulary stimuli and full-transcript recordings for all 1,020 scenarios, annotated with **IPA (trustworthy only for curated/minimal-pair subsets; placeholder `/{word}/` elsewhere), part of speech (often placeholder `noun`), author-assigned A1–C1 level (not certified), minimal-pair contrast, and target phoneme**.
 2. Passes that audio at playback time through a **fully disclosed, real-time Web Audio DSP graph** that simulates five author-tuned degraded channels (not lab-calibrated, tuned by ear) plus a fully adjustable custom channel.
 3. Trains and measures three skills: **(a) minimal-pair phoneme discrimination, (b) dictation under degradation, (c) situated comprehension under stress** (multiple-choice over template-generated transit, campus, workplace, and emergency scenarios — programmatic Mad Libs, not examiner-vetted).
 4. Tracks **per-phoneme, per-mode, and per-author-assigned-level accuracy, streaks, and item history entirely on-device**, with an instant **Clean Audio A/B bypass** for perceptual realignment and a low-distraction **Calm View** plus **Read Aloud** for accessibility.
@@ -91,7 +91,7 @@ A React + Web Audio application that makes clean study audio **deliberately hard
 
 ### 2.2 The HOW (one paragraph)
 
-The browser fetches `/data/vocabulary.json` and `/audio/{word}.mp3`, decodes to an `AudioBuffer`, and routes it through `AudioEngine.play(url, config)`: an optional packet-loss chopper (`Math.random()`, unseeded — not Gilbert-Elliott) → high-pass biquad → low-pass biquad → WaveShaper saturation → dry/wet convolver reverb → master gain + `AnalyserNode`, with a parallel band-limited noise loop mixed at an author-scaled digital-domain SNR (formula-standard, SPL-uncalibrated). A `clean: true` flag bypasses the entire chain for A/B comparison. Answers are scored client-side (exact match plus a disclosed number-word synonym table), and all analytics persist in `localStorage`.
+The browser fetches `/data/vocabulary.json` and `/audio/{word}.mp3` (vocabulary modes) or `/audio/scenario_{n}.mp3` (Situations mode — full-transcript neural recording), decodes to an `AudioBuffer`, and routes it through `AudioEngine.play(url, config)`: an optional packet-loss chopper (`Math.random()`, unseeded — not Gilbert-Elliott) → high-pass biquad → low-pass biquad → WaveShaper saturation → dry/wet convolver reverb → master gain + `AnalyserNode`, with a parallel band-limited noise loop mixed at an author-scaled digital-domain SNR (formula-standard, SPL-uncalibrated). A `clean: true` flag bypasses the entire chain for A/B comparison. Answers are scored client-side (exact match plus a disclosed number-word synonym table), and all analytics persist in `localStorage`. The sine-tone `generateSyntheticSpeechBuffer()` fallback remains in code but never fires (0 missing audio — verified).
 
 ### 2.3 The WHY
 
@@ -137,7 +137,7 @@ C2 is **deliberately excluded**: the source wordlists (Google 10K + curated acad
 
 ## 4. Theoretical Foundations (standards that inform us vs claims we do not make)
 
-Real standards reused here: CEFR 2020 bins (organisation only), IPA symbols, ITU-T 300–3,400 Hz band edges, W3C Web Audio nodes, Kellett pink-noise filter, standard SNR decibel math, and WCAG 2.2 AA intent. None of these certifies this app. Preset values, level assignments, scenarios, and synthetic audio below are author heuristics (see §0.2 and §14).
+Real standards reused here: CEFR 2020 bins (organisation only), IPA symbols, ITU-T 300–3,400 Hz band edges, W3C Web Audio nodes, Kellett pink-noise filter, standard SNR decibel math, and WCAG 2.2 AA intent. None of these certifies this app. Preset values, level assignments, template wording, and the neural-voice choice below are author heuristics (see §0.2 and §14).
 
 1. **L2 speech perception (Flege SLM; Best PAM-L2).** Non-native listeners assimilate L2 contrasts to L1 categories. Minimal-pair training with immediate feedback and clean-bypass realignment directly targets category boundary formation.
 2. **Functional load.** Contrasts are prioritised by communicative cost: teen/ty stress, `/θ/–/s/–/f/`, `/s/–/z/` voicing, `/l/–/r/`, `/v/–/w/` — all heavily represented because confusing them breaks numbers, transit, and safety messages.
@@ -170,7 +170,7 @@ Real standards reused here: CEFR 2020 bins (organisation only), IPA symbols, ITU
 
 Measured with `python -c "import json…" public/data/vocabulary.json` and `Get-ChildItem public/audio` on 2026-09-20 (after the full-audio fill):
 
-- `version`: `"2.1.0"`, `generatedAt`: ISO timestamp at generation time. `contentPolicy`: educational-safe (7 vulgar slang entries purged: porn/pussy/xxx/fucking/fuck/porno/dick; clinical `sex`/`sexual` retained; scenarios profanity-free). `audioCoverage`: all words + all scenarios have audio, 0 missing.
+- `version`: `"2.1.0"`, `generatedAt`: ISO timestamp at generation time, file size **1,414,083 bytes**. `contentPolicy`: educational-safe (7 vulgar slang entries purged: porn/pussy/xxx/fucking/fuck/porno/dick; clinical `sex`/`sexual` retained; scenarios profanity-free). `audioCoverage`: all words + all scenarios have audio, 0 missing.
 - **Words: 3,593. Scenarios: 1,020.**
 - Word levels (author-assigned, not certified): **A1 699, A2 749, B1 796, B2 700, C1 649.**
 - Scenario levels (author-assigned, not certified): **A1 136, A2 136, B1 221, B2 306, C1 221.**
@@ -201,7 +201,7 @@ On 2026-09-20 the raw Google-10K-derived wordlist was found to contain 7 vulgar 
 ```ts
 VocabEntry { id, word, ipa, partOfSpeech, category, pairWord?, targetPhoneme?, audioUrl, distractors?, level? }
 StressScenario { id, scenario, transcript, targetWord, question, options[4], correctOption, audioUrl, audioFallbackWord?, contextDescription, level? }
-VocabDataset { version, generatedAt, totalWords, words[], scenarios[] }
+VocabDataset { version, generatedAt, totalWords, totalScenarios, words[], scenarios[], contentPolicy?, audioCoverage? }
 AcousticConfig { presetId, name, description, highPassHz, lowPassHz, distortionDrive 0–100, snrDb, noiseType 'pink'|'white'|'radio_hum'|'subway_rumble'|'off', packetLossRate 0–80, reverbWet 0–1 }
 UserStats { totalAttempted, totalCorrect, streak, bestStreak, modeStats{…}, phonemeAccuracy{phoneme:{correct,total}}, levelAccuracy?, recentHistory[≤50] }
 ```
@@ -215,15 +215,16 @@ Example word entry (minimal pair):
   "audioUrl": "/audio/ship.mp3", "audioFallbackWord": "ship" }
 ```
 
-Example scenario entry:
+Example scenario entry (shipped v2.1.0 — full-transcript neural audio):
 
 ```json
-{ "id": "sc-a1-1", "level": "A1", "scenario": "Classroom Room Number Announcement",
-  "transcript": "Attention students: English beginner class is in room fifteen, not room fifty.",
-  "targetWord": "fifteen", "question": "Which classroom number was announced?",
-  "options": ["Room 50","Room 15","Room 5","Room 55"], "correctOption": "Room 15",
-  "audioUrl": "/audio/fifteen.mp3", "audioFallbackWord": "fifteen",
-  "contextDescription": "School hallway intercom with echo and distant chatter" }
+{ "id": "sc-a1-1", "level": "A1", "scenario": "Flight Gate Change Announcement #1",
+  "transcript": "Attention passengers on flight BA 215 to London: Your departure gate has been moved to Gate 17. Boarding starts at 9:30 AM.",
+  "targetWord": "Gate 17", "question": "Which new departure gate was announced for the flight to London?",
+  "options": ["Gate 13","Gate 17","Gate 22","Gate 27"], "correctOption": "Gate 17",
+  "audioUrl": "/audio/scenario_1.mp3",
+  "audioFallbackWord": "Attention passengers on flight BA 215 to London: Your departure gate has been moved to Gate 17. Boarding starts at 9:30 AM.",
+  "contextDescription": "Airport gate concourse with PA chime, echoing announcements, and rolling luggage noise" }
 ```
 
 ### 6.4 Minimal-pair phoneme inventory (what contrasts are actually trained)
@@ -236,11 +237,11 @@ Each pair entry stores `targetPhoneme` as a human string (e.g. `"/tiːn/ vs /ti/
 
 Six template groups in `generate_massive_corpus.js`: **Airport Terminal & Flights; Train & Subway Stations; Café & Restaurant Dining; University & School Campus; Workplace & Professional Calls; Public Services & Emergencies** — each with 3–5 `contextDescription` acoustic scenes and 3–5 item templates. Token slots (`{CITY}`, `{FLIGHT}`, `{NUM1…4}`, `{TIME}`, `{GATE}`, `{MILK}`, `{DISH}`, `{PIN}`, …) are filled deterministically from fixed arrays (`CITIES`, `NAMES`, `TIMES`, `FLIGHTS`, `STATIONS`, …) indexed by scenario counter so regeneration is reproducible. Options are the template’s four distractors with token substitution; if the computed `targetWord` is missing from the list it replaces slot 0, and short lists are padded with `"None of the above"` / `"Option not specified"` — disclosed here because it affects distractor quality (see §14).
 
-The earlier `build_educational_corpus.js` contributes the **30 hand-written educational scenarios** (6 per level, lectures/exams/clinics/evacuations) that remain the highest-quality subset and should be cited as such in any university submission (still author-written, not externally moderated).
+The `build_educational_corpus.js` predecessor (not shipped) contributes the **30 hand-written educational scenario pattern** (lectures/exams/clinics/evacuations) that remains the highest-quality writing pattern and should be cited as such in any university submission (still author-written, not externally moderated). The shipped `vocabulary.json` v2.1.0 contains only the 1,020 generated scenarios described above.
 
 ### 6.6 How transcripts relate to audio
 
-Each scenario object carries a full-sentence `transcript` (e.g. a gate-change announcement) and its `audioUrl` (`/audio/scenario_{idx}.mp3`) now points to a **real full-transcript neural recording** (Edge `en-US-AriaNeural`, average ~10 s, verified by ffprobe spot-check: `scenario_1.mp3` = 10.08 s at 128 kbps). The app plays the whole announcement through the degraded chain while displaying the scenario text and question. The older hand-written subset (30 educational scenarios) uses single-word `audioUrl`s (`/audio/{targetWord}.mp3`) — keyword playback for those. Any submission should state this split honestly: **1,020 generated scenarios = connected-speech (neural voice) comprehension; 30 curated scenarios = keyword-in-context.** Template wording itself remains author-written Mad Libs, unmoderated by examiners (see §14).
+Each scenario object carries a full-sentence `transcript` (e.g. a gate-change announcement) and its `audioUrl` (`/audio/scenario_{idx}.mp3`) now points to a **real full-transcript neural recording** (Edge `en-US-AriaNeural`, average ~10 s, verified by ffprobe spot-check: `scenario_1.mp3` = 10.08 s at 128 kbps). The app plays the whole announcement through the degraded chain while displaying the scenario text and question. The 30 hand-written educational scenarios from `build_educational_corpus.js` (predecessor script, not in the shipped file) used single-word `audioUrl`s (`/audio/{targetWord}.mp3`) — keyword playback for those. Any submission should state this honestly: **shipped v2.1.0 = 1,020 connected-speech (neural voice) scenarios.** Template wording itself remains author-written Mad Libs, unmoderated by examiners (see §14).
 
 ### 6.7 Audio coverage and normalisation (100% — the "cargo cult" gap is closed)
 
@@ -344,7 +345,8 @@ src/components/WaveformVisualizer.tsx canvas oscilloscope
 src/components/TrainingCard.tsx   play/clean/read-aloud/speed/prompt/inputs/feedback/keyboard (459 lines)
 src/components/StatsDrawer.tsx    accuracy/streak/completed, per-mode + per-level bars, 15-item history, reset
 src/index.css               Tailwind import, Apple HIG palette, focus rings, .apple-pressable
-public/data/vocabulary.json shipped corpus (1.33 MB)
+public/data/vocabulary.json shipped corpus v2.1.0 (1.41 MB, 3,593 words + 1,020 scenarios)
+public/data/vocabulary.v2.0.0.backup.json pre-purge backup (1.33 MB, 3,600 words)
 public/audio/*.mp3          4,671 real-speech files (words + full-transcript scenarios, 44.1 kHz/128k/mono; ~240 MB — use Git LFS)
 scripts/ingest_audio.js     Wiktionary+Commons+ffmpeg pipeline (v1 dataset + 8 scenarios)
 scripts/build_educational_corpus.js curated A1–C1 corpus (≈250 words + 30 scenarios, v2.0.0 writer)
@@ -415,7 +417,7 @@ Corpus writers are invoked directly: `node scripts/build_educational_corpus.js`,
 
 1. **`scripts/ingest_audio.js` (v1, human-audio grounded).** `WORD_DEFINITIONS` (~250 entries: teen/ty + consonant/vowel pairs + numbers/dates/transit/emergency/daily verbs) × `scrapeWiktionary → resolveCommonsUrl → downloadAndConvert(ffmpeg)` under a `pMap(concurrency=2)` pool with `fetchWithRetry(retries=4, backoff 1s, 10 s timeout, 429 exponential backoff)` and `sleep(250 ms)` between successes. Emits `vocabulary.json v1.0.0` + 8 hand-written `STRESS_SCENARIOS`. Skip-download logic reuses MP3s >1,000 bytes and existing IPA.
 2. **`scripts/build_educational_corpus.js` (v2 curated).** `COMPREHENSIVE_WORDS` (A1 numbers/pairs/classroom, A2 transit/safety, B1 academic/travel, B2 research, C1 formal discourse) + `EDUCATIONAL_SCENARIOS` (30 hand-written A1–C1 situations with full transcripts/questions/distractors). Writes `vocabulary.json v2.0.0` (pretty-printed), prints per-level distributions, then attempts `ensureAllAudio()` top-up downloads.
-3. **`scripts/generate_massive_corpus.js` (shipped output).** `MINIMAL_PAIR_SPECS` (~200 contrast specs → 331 deduplicated pair entries) + live Google-10K fetch stratified to quotas (A1 700 / A2 750 / B1 800 / B2 700 / C1 remainder, total cap 3,600; general items get placeholder `ipa: "/{word}/"`, `partOfSpeech: "noun"`, `category: "general_vocab"`) + deterministic 1,020-scenario template expansion. Writes **minified** `vocabulary.json v2.0.0` with `totalWords` + `totalScenarios`. This is the file in `public/data/`.
+3. **`scripts/generate_massive_corpus.js` (shipped JSON output, v2.0.0 → v2.1.0 after purge).** `MINIMAL_PAIR_SPECS` (~200 contrast specs → 331 deduplicated pair entries) + live Google-10K fetch stratified to quotas (A1 700 / A2 750 / B1 800 / B2 700 / C1 remainder, total cap 3,600; general items get placeholder `ipa: "/{word}/"`, `partOfSpeech: "noun"`, `category: "general_vocab"`) + deterministic 1,020-scenario template expansion. Writes **minified** `vocabulary.json` with `totalWords` + `totalScenarios`. The shipped file in `public/data/` is v2.1.0 (3,593 words after the 7-word profanity purge; backup of v2.0.0 kept alongside).
 4. **`scripts/download_missing_audio.js`.** 43-word Commons top-up (`book`, `exam`, … `valid`) trying `en-us-`, `En-us-`, `en-uk-`, `En-uk-`, and four Lingua Libre uploader patterns before falling back to Wiktionary-parse. 200 ms pacing, ffmpeg normalisation, per-word success logging.
 5. **`scripts/sync_vocab.cjs`.** Safety rewriter: parses `ingest_audio.js` source for `WORD_DEFINITIONS`/`STRESS_SCENARIOS` via regex+`eval`, keeps only entries whose MP3 exists, reuses prior IPA, writes `v1.0.0`. Useful before offline demos; **do not run casually** — it will shrink the corpus to audio-gated size.
 6. **`scripts/generate_all_audio_edge.py` (shipped audio fill, 2026-09-20).** Reads `vocabulary.json`, collects every word target (`public/audio/{word}.mp3`) and every scenario target (`public/audio/scenario_{n}.mp3`) missing or under 1,000 bytes, synthesises with `edge_tts.Communicate(text, "en-US-AriaNeural")` (words: the word itself; scenarios: the full transcript), then `ffmpeg` normalises to 44.1 kHz / 128 kbps / mono. Concurrency 10, 3-attempt retry, `EDGE_MAX` chunking for resumable runs, `EDGE_VOICE`/`EDGE_CONCURRENCY` overrides. Result: 4,189 files, 0 failures. Rerun is idempotent (existing files skipped).
@@ -527,6 +529,6 @@ SNR (signal-to-noise ratio, dB); HP/LP (high-/low-pass cutoff); WaveShaper drive
 - Corpus snapshot: `version 2.1.0`, 3,593 educational-safe words, 1,020 scenarios, `audioCoverage` block (0 missing), 4,671 MP3s (~240 MB, 44.1 kHz/128k/mono), verified 2026-09-20 via `python … json.load` + `Get-ChildItem public/audio` + ffprobe spot-checks (`ship.mp3` 1.87 s, `scenario_1.mp3` 10.08 s). Backup of v2.0.0 kept at `public/data/vocabulary.v2.0.0.backup.json`.
 - Generators: `node scripts/generate_massive_corpus.js` (word/scenario JSON) then `python scripts/generate_all_audio_edge.py` (all audio; `EDGE_MAX` chunks resumption, 4,189 files, 0 failures). Curated predecessor: `node scripts/build_educational_corpus.js` (pretty-printed, 30 hand-written scenarios).
 - Reproduce counts any time with the one-liner in §6.1. Back up `vocabulary.json` before re-running any writer script.
-- Git history at writing: `08d04af feat: initial project scaffold` over `e2324c8 Initial commit` (2 commits; corpus and audio largely untracked/parallel to history — confirm `.gitignore` coverage before archiving for review).
+- Git history at writing: 5 commits (`e2324c8` → `08d04af` → `13b7d21` → `fda1af9` → `7da4903`); `public/audio/*.mp3` is largely committed (3,352 tracked) with ~1,319 recent fills untracked — confirm Git LFS coverage before archiving for review (~240 MB).
 
 *End of README — no aspect of the corpus size, audio coverage, DSP mathematics, scoring rules, data provenance, licensing obligations, or known defects has been knowingly withheld. Where the implementation is provisional (dormant sine fallback, template scenarios, placeholder IPA, author-assigned levels, ear-tuned presets, mixed human/neural voices, inert Gemini flag), it is labelled as such above so reviewers can judge accordingly. This is an independent practice prototype, not an accredited test suite. Audio: 4,671 real-speech MP3s, 0 missing, verified 2026-09-20.*
