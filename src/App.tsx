@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   AcousticConfig,
   AcousticPresetId,
@@ -140,10 +140,31 @@ export default function App() {
     }
   }, [selectedLevel]);
 
-  // Active audio playback state
   const [isPlaying, setIsPlaying] = useState(false);
   const [isClean, setIsClean] = useState(false);
   const [isAutoMode, setIsAutoMode] = useState(true);
+  const [isTurboMode, setIsTurboMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('acoustic_ear_turbo_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const turboTimeoutRef = useRef<number | null>(null);
+  const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
+
+  const handleToggleTurboMode = () => {
+    setIsTurboMode((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('acoustic_ear_turbo_mode', String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
 
   // In-situ feedback state
   const [feedback, setFeedback] = useState<{
@@ -362,7 +383,49 @@ export default function App() {
         setAcousticConfig(ACOUSTIC_PRESETS[presetId]);
       }
     }
-  }, [activeItem, currentMode, isAutoMode]);
+
+    if (shouldAutoPlay) {
+      setShouldAutoPlay(false);
+      // Need a slight delay to let the UI update before audio context starts
+      setTimeout(() => {
+        playDegraded();
+      }, 100);
+    }
+  }, [activeItem, currentMode, isAutoMode, shouldAutoPlay, playDegraded]);
+
+  // Switch Oxford Psychometrics level
+  const handleSelectLevel = (level: OxfordLevel) => {
+    if (turboTimeoutRef.current) { window.clearTimeout(turboTimeoutRef.current); turboTimeoutRef.current = null; }
+    audioEngine.stop();
+    setIsPlaying(false);
+    setSelectedLevel(level);
+    setCurrentIndex(0);
+    setFeedback(null);
+  };
+
+  // Next challenge
+  const handleNext = (fromTurbo: boolean = false) => {
+    if (turboTimeoutRef.current) {
+      window.clearTimeout(turboTimeoutRef.current);
+      turboTimeoutRef.current = null;
+    }
+    setFeedback(null);
+    audioEngine.stop();
+    setIsPlaying(false);
+    setCurrentIndex((prev) => prev + 1);
+    
+    if (fromTurbo) {
+      setShouldAutoPlay(true);
+    }
+  };
+
+  const handleShuffle = () => {
+    if (turboTimeoutRef.current) { window.clearTimeout(turboTimeoutRef.current); turboTimeoutRef.current = null; }
+    setFeedback(null);
+    audioEngine.stop();
+    setIsPlaying(false);
+    setCurrentIndex((prev) => prev + Math.floor(Math.random() * 7) + 1);
+  };
 
   // Submit and verify answer
   const handleSubmitAnswer = (rawAnswer: string) => {
@@ -468,31 +531,15 @@ export default function App() {
       userAnswer: rawAnswer,
       correctAnswer: expected
     });
+
+    if (isTurboMode) {
+      if (turboTimeoutRef.current) window.clearTimeout(turboTimeoutRef.current);
+      turboTimeoutRef.current = window.setTimeout(() => {
+        handleNext(true);
+      }, 3000);
+    }
   };
 
-  // Switch Oxford Psychometrics level
-  const handleSelectLevel = (level: OxfordLevel) => {
-    audioEngine.stop();
-    setIsPlaying(false);
-    setSelectedLevel(level);
-    setCurrentIndex(0);
-    setFeedback(null);
-  };
-
-  // Next challenge
-  const handleNext = () => {
-    setFeedback(null);
-    audioEngine.stop();
-    setIsPlaying(false);
-    setCurrentIndex((prev) => prev + 1);
-  };
-
-  const handleShuffle = () => {
-    setFeedback(null);
-    audioEngine.stop();
-    setIsPlaying(false);
-    setCurrentIndex((prev) => prev + Math.floor(Math.random() * 7) + 1);
-  };
 
   const handleSelectPreset = (presetId: AcousticPresetId) => {
     audioEngine.stop();
@@ -512,6 +559,7 @@ export default function App() {
       <Header
         currentMode={currentMode}
         onSelectMode={(mode) => {
+          if (turboTimeoutRef.current) { window.clearTimeout(turboTimeoutRef.current); turboTimeoutRef.current = null; }
           audioEngine.stop();
           setIsPlaying(false);
           setFeedback(null);
@@ -523,6 +571,8 @@ export default function App() {
         onOpenStats={() => setIsStatsOpen(true)}
         calmMode={calmMode}
         onToggleCalmMode={handleToggleCalmMode}
+        turboMode={isTurboMode}
+        onToggleTurboMode={handleToggleTurboMode}
       />
 
       {/* Main Content Area */}

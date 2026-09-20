@@ -790,7 +790,7 @@ export class AudioEngine {
 
       // 6. Non-Linear WaveShaper Distortion
       const waveShaper = ctx.createWaveShaper();
-      waveShaper.curve = this.makePhysicalDistortionCurve(config.presetId, config.distortionDrive) as unknown as Float32Array;
+      waveShaper.curve = this.makePhysicalDistortionCurve(config.presetId, config.distortionDrive) as any;
       waveShaper.oversample = '4x';
 
       // Chain speech processing nodes

@@ -1,6 +1,6 @@
 import React from 'react';
 import { TrainingMode, UserStats } from '../types';
-import { BarChart2, Sparkles, SlidersHorizontal } from 'lucide-react';
+import { BarChart2, Sparkles, SlidersHorizontal, Zap } from 'lucide-react';
 
 interface HeaderProps {
   currentMode: TrainingMode;
@@ -9,6 +9,8 @@ interface HeaderProps {
   onOpenStats: () => void;
   calmMode: boolean;
   onToggleCalmMode: () => void;
+  turboMode: boolean;
+  onToggleTurboMode: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -17,7 +19,9 @@ export const Header: React.FC<HeaderProps> = ({
   stats,
   onOpenStats,
   calmMode,
-  onToggleCalmMode
+  onToggleCalmMode,
+  turboMode,
+  onToggleTurboMode
 }) => {
   const accuracy =
     stats.totalAttempted > 0
@@ -85,6 +89,24 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Calm View Toggle & Progress */}
         <div className="flex items-center gap-2">
+          {/* Turbo Mode Switch */}
+          <button
+            id="turbo-mode-btn"
+            type="button"
+            onClick={onToggleTurboMode}
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-full transition-all apple-pressable cursor-pointer min-h-[44px] border ${
+              turboMode
+                ? 'bg-[#ff9500]/10 text-[#ff9500] border-[#ff9500]/30 shadow-sm'
+                : 'bg-white text-[#6e6e73] hover:text-[#1d1d1f] border-black/[0.1]'
+            }`}
+            title="Turbo Challenge: 3s delay then auto-play next"
+          >
+            <Zap className="w-4 h-4 stroke-[2.2]" />
+            <span className="hidden md:inline">
+              {turboMode ? 'Turbo On' : 'Turbo'}
+            </span>
+          </button>
+
           {/* Calm View Switch (Assistive Access & Cognitive Support) */}
           <button
             id="calm-mode-btn"
