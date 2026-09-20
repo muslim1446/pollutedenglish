@@ -1,13 +1,13 @@
 # Listening Practice — Acoustic Ear: Degraded-Speech Listening Practice Prototype
 
-**An independent, unaccredited English listening-practice prototype for degraded acoustic conditions: telephone bandpass, train-station PA reverberation, intercom staccato, walkie-talkie overdrive, and weak-cell packet loss — with partially real human audio, IPA-annotated minimal pairs, 3,600-word vocabulary, and 1,020 template-generated practice scenarios.**
+**An independent, unaccredited English listening-practice prototype for degraded acoustic conditions: telephone bandpass, train-station PA reverberation, intercom staccato, walkie-talkie overdrive, and weak-cell packet loss — with real intelligible speech audio for every item (human Commons recordings where available, Edge neural TTS elsewhere), IPA-annotated minimal pairs, 3,593-word educational-safe vocabulary, and 1,020 template-generated practice scenarios with full-sentence audio.**
 
 > **Honesty notice — read first.** This is a hybrid: the core audio and linguistic foundations reuse real, well-established industry and academic standards, but the actual tuning, corpus tagging, and scenario writing are author-crafted heuristics. Difficulty levels and scenario prompts are **author-designed practice materials, not an officially accredited or certified test suite**. See [§0](#0-honesty-statement--what-is-standard-vs-what-is-author-made) and [§14](#14-limitations-threats-to-validity-and-known-defects--nothing-hidden).
 
 - App display name (`metadata.json`, `index.html`): **Listening Practice**
 - Internal engine / pipeline name (code, scripts, User-Agent strings): **Acoustic Ear / AcousticEarTrainer**
-- Current shipped corpus (`public/data/vocabulary.json`): **version `2.0.0`, 3,600 words + 1,020 scenarios, 1,330,524 bytes, generated 2026-09-20**
-- Audio store (`public/audio/`): **482 × MP3 files at original snapshot 2026-09-20; count grows as ingestion scripts run — recount with `Get-ChildItem public/audio/*.mp3`** (coverage gap disclosed in §6.7 and §14 — not hidden; most items still fall back to synthetic audio)
+- Current shipped corpus (`public/data/vocabulary.json`): **version `2.1.0`, 3,593 words + 1,020 scenarios, educational-safe (7 vulgar slang entries purged 2026-09-20), verified 2026-09-20**
+- Audio store (`public/audio/`): **4,671 × MP3 files (44.1 kHz / 128 kbps / mono, ~240 MB), 100% coverage verified 2026-09-20 — every word and every scenario transcript has real intelligible speech audio; recount with `Get-ChildItem public/audio/*.mp3`** (provenance: pre-existing Wikimedia Commons human recordings kept where present, remainder generated with Edge Neural TTS `en-US-AriaNeural` via `scripts/generate_all_audio_edge.py` — see §6.7; the old sine-tone fallback in code is now a never-triggered last resort)
 - Stack: **React 19 + Vite 8 + TypeScript + Tailwind CSS 4 + Web Audio API DSP + Wiktionary/Wikimedia Commons human speech + localStorage analytics**
 - Licence status: **code licence not declared in repository; linguistic/audio data carry third-party copyleft and attribution obligations — see §13. You must attribute before any university submission. Not an Oxford University Press product.**
 
@@ -64,7 +64,7 @@ This project is a hybrid. The architecture is pedagogically and acoustically leg
 1. **CEFR / "Oxford" levels are author-assigned, not certified.** Not an Oxford University Press product, not OOPT-certified. Words were binned to A1–C1 by Google-10K frequency rank plus developer intuition and curation, not standardised testing. C2 was deliberately omitted because there was no objective way to classify it here.
 2. **Preset settings were tuned by ear, not calibrated equipment.** While 300–3,400 Hz is standard telephone bandwidth, values such as "28% packet loss", "drive = 45", "reverbWet = 0.38" are arbitrary values chosen because they "sounded like an office intercom / station PA". The packet-loss chopper uses plain `Math.random()`, **not** a standard telecom loss model such as Gilbert-Elliott burst loss, and uses no fixed seed, so repeats are not acoustically identical.
 3. **Template-generated scenarios.** The 1,020 scenarios (airport, subway, clinic, etc.) are programmatic "Mad Libs" from author-written templates with `{CITY}`, `{GATE}`, `{TIME}` token substitution in `generate_massive_corpus.js`. They were not vetted by professional language examiners, distractor plausibility was not human-rated, and some option lists were padded with `"None of the above"` / `"Option not specified"`.
-4. **Synthetic audio fallback formula.** For the ~3,100 words where real recordings are missing at snapshot time, the fallback tone is a developer-invented equation combining sine waves (140 Hz + 700/1,700/2,800 Hz partials with attack/release envelope) to vaguely mimic vocal-tract formants. It preserves duration/envelope cues but **contains no lexical content and is not a human voice**. The UI does not currently badge synthetic vs human playback.
+4. **Legacy sine-tone fallback (now dormant).** `AudioEngine.generateSyntheticSpeechBuffer()` remains in code as a defensive last resort, but since the 2026-09-20 full-audio fill it is never triggered: all 3,593 words and 1,020 scenario transcripts have real speech MP3s on disk (see §6.7). The fallback equation (140 Hz + 700/1,700/2,800 Hz sine partials, no lexical content, not a human voice) is documented here so reviewers know what would play if an audio file were deleted or corrupted. The UI does not badge human-Commons vs neural-TTS playback — voice heterogeneity is disclosed in §6.7 instead.
 
 ---
 
@@ -79,7 +79,7 @@ This prototype attempts to narrow that **ecological-validity gap**. It is a clie
 3. Trains and measures three skills: **(a) minimal-pair phoneme discrimination, (b) dictation under degradation, (c) situated comprehension under stress** (multiple-choice over template-generated transit, campus, workplace, and emergency scenarios — programmatic Mad Libs, not examiner-vetted).
 4. Tracks **per-phoneme, per-mode, and per-author-assigned-level accuracy, streaks, and item history entirely on-device**, with an instant **Clean Audio A/B bypass** for perceptual realignment and a low-distraction **Calm View** plus **Read Aloud** for accessibility.
 
-The shipped corpus contains **3,600 vocabulary entries** (author-binned A1: 700, A2: 750, B1: 800, B2: 700, C1: 650; of which 331 are minimal-pair entries and 3,269 are general-vocabulary entries) and **1,020 template-generated practice scenarios** (A1: 136, A2: 136, B1: 221, B2: 306, C1: 221). Audio coverage at original snapshot 2026-09-20 was **482 MP3s**; every missing file falls back at runtime to a disclosed developer-invented synthetic buffer (harmonic sine stack, no lexical content — see §6.7, §7.3 and §14). Nothing about this asymmetry is concealed: the counts, the fallback synthesis equation, and the template-generation method are all documented below so that an independent reviewer can reproduce and critique them.
+The shipped corpus contains **3,593 vocabulary entries** (author-binned A1: 699, A2: 749, B1: 796, B2: 700, C1: 649; of which 331 are minimal-pair entries and 3,262 are general-vocabulary entries; 7 vulgar slang items purged 2026-09-20, clinical `sex`/`sexual` retained) and **1,020 template-generated practice scenarios** (A1: 136, A2: 136, B1: 221, B2: 306, C1: 221). Audio coverage verified 2026-09-20 is **4,671 MP3s on disk, 0 missing of 4,613 referenced URLs** (58 legacy orphan files from earlier pipelines kept harmlessly): every word has a real single-word recording and every scenario has a real full-transcript recording (see §6.6–§6.7). Nothing is concealed: the counts, the per-file provenance mix (Commons human vs Edge neural), and the template-generation method are all documented below so that an independent reviewer can reproduce and critique them.
 
 ---
 
@@ -108,7 +108,7 @@ The browser fetches `/data/vocabulary.json` and `/audio/{word}.mp3`, decodes to 
 
 - **RQ1 (discrimination):** Does repeated degraded-channel minimal-pair practice improve discrimination of targeted contrasts (e.g. `/ɪ/–/iː/`, `/θ/–/s/`, `/tiːn/–/ti/`) as measured by per-phoneme accuracy at fixed digital-domain SNR? (Untested — no efficacy trial has been run.)
 - **RQ2 (robustness):** Does dictation accuracy degrade monotonically with decreasing SNR / narrowing bandwidth / increasing packet loss, and does the slope flatten with practice?
-- **RQ3 (transfer):** Does single-word training transfer to keyword-in-context scenario comprehension (scenario text + single-word/fallback audio, multiple choice) at the same author-assigned level? Note: scenarios are not whole-announcement connected speech — see §6.6.
+- **RQ3 (transfer):** Does single-word training transfer to scenario comprehension (full-announcement neural audio + text, multiple choice) at the same author-assigned level? Note: scenario wording is template-generated, voices are neural — see §6.6.
 - **RQ4 (perceptual recalibration, not equipment calibration):** Can the Clean Audio A/B bypass accelerate perceptual recalibration versus degraded-only repetition?
 - **RQ5 (level ordering — author bins only):** Do A1→C1 accuracy gradients follow the app's author-assigned difficulty ordering under identical acoustic conditions? This would test internal consistency of author bins, not CEFR validity.
 
@@ -116,7 +116,7 @@ The app does not itself run the RCT — it **instruments** the data (per-phoneme
 
 ### 3.2 Aims
 
-- Provide ≥3,000 author-stratified word stimuli with IPA (curated subsets only) and partial human audio provenance (remainder synthetic fallback).
+- Provide ≥3,000 author-stratified word stimuli with IPA (curated subsets only) and real speech audio for every item (Commons human where available, Edge neural elsewhere).
 - Provide ≥1,000 template-generated practice scenarios across six real-world domains (airport, rail/subway, café/retail, campus, workplace, emergency/utilities) — unvetted Mad Libs for practice, not validated test items.
 - Simulate five author-tuned degraded channels that roughly evoke real channels, with physically interpretable but uncalibrated parameters.
 - Measure learning without a server (privacy-preserving, offline-capable after first load).
@@ -166,16 +166,16 @@ Real standards reused here: CEFR 2020 bins (organisation only), IPA symbols, ITU
 
 ## 6. Corpus Specification — The Author-Stratified Practice Corpus (Oxford-Style Labels Only)
 
-### 6.1 Snapshot (measured 2026-09-20, not estimated — audio count is stale, recount now)
+### 6.1 Snapshot (measured 2026-09-20, not estimated)
 
-Measured with `python -c "import json…" public/data/vocabulary.json` and `Get-ChildItem public/audio` on 2026-09-20:
+Measured with `python -c "import json…" public/data/vocabulary.json` and `Get-ChildItem public/audio` on 2026-09-20 (after the full-audio fill):
 
-- `version`: `"2.0.0"`, `generatedAt`: ISO timestamp at generation time.
-- **Words: 3,600. Scenarios: 1,020. File size: 1,330,524 bytes.**
-- Word levels (author-assigned, not certified): **A1 700, A2 750, B1 800, B2 700, C1 650.**
+- `version`: `"2.1.0"`, `generatedAt`: ISO timestamp at generation time. `contentPolicy`: educational-safe (7 vulgar slang entries purged: porn/pussy/xxx/fucking/fuck/porno/dick; clinical `sex`/`sexual` retained; scenarios profanity-free). `audioCoverage`: all words + all scenarios have audio, 0 missing.
+- **Words: 3,593. Scenarios: 1,020.**
+- Word levels (author-assigned, not certified): **A1 699, A2 749, B1 796, B2 700, C1 649.**
 - Scenario levels (author-assigned, not certified): **A1 136, A2 136, B1 221, B2 306, C1 221.**
-- Word categories (shipped generator vocabulary): **`minimal_pair` 331, `general_vocab` 3,269.** Earlier pipelines used finer categories (`number`, `date_time`, `travel_transit`, `emergency`, `nouns`, `daily_verbs`); the shipped massive corpus collapses non-pairs to `general_vocab`. The TypeScript type still lists the older union — a known schema drift documented in §14.
-- Audio files present at snapshot: **482 MP3s** in `public/audio/` (128 kbps, 44.1 kHz, normalised via ffmpeg where ingested through `ingest_audio.js` / `download_missing_audio.js`). Recount now — the directory has grown since the snapshot.
+- Word categories (shipped generator vocabulary): **`minimal_pair` 331, `general_vocab` 3,262.** Earlier pipelines used finer categories (`number`, `date_time`, `travel_transit`, `emergency`, `nouns`, `daily_verbs`); the shipped massive corpus collapses non-pairs to `general_vocab`. The TypeScript type still lists the older union — a known schema drift documented in §14.
+- Audio files present: **4,671 MP3s** in `public/audio/` (~240 MB; 4,613 referenced URLs + 58 harmless legacy orphans from earlier pipelines), all 44.1 kHz / 128 kbps / mono. **0 missing of 3,593 word URLs and 0 missing of 1,020 scenario URLs — verified.**
 
 ### 6.2 Provenance — where every byte came from and under what licence
 
@@ -185,11 +185,16 @@ Measured with `python -c "import json…" public/data/vocabulary.json` and `Get-
 | Wikimedia Commons API (`commons.wikimedia.org/w/api.php…prop=imageinfo`) | Direct OGG/WAV URLs for `en-us-{word}.ogg`, `En-us-{word}.ogg`, Lingua Libre `LL-Q1860…` variants | `resolveCommonsUrl()` + `download_missing_audio.js` variation list | Per-file licences (mostly **CC BY-SA / CC0 / GFDL** depending on speaker upload). You must retain per-file attribution for redistribution; the pipeline does not currently write a per-file credit roll — see §14 as a submission risk. |
 | Google 10,000 English wordlist (`first20hours/google-10000-english-usa.txt`) | Frequency-ranked surface forms filtered to `^[a-z]{3,}$` | Fetched live by `scripts/generate_massive_corpus.js`, stratified by rank into A1→C1 quotas | Public GitHub corpus of Google data; treat as research-use, verify institutional policy before commercial redistribution. |
 | Curated academic lists (author-written in `build_educational_corpus.js`) | ~250 hand-written entries + 30 hand-written scenarios with transcripts, questions, distractors | Checked into `scripts/` | Original to this project; no third-party restriction. |
-| Template-generated scenarios (author-written templates in `generate_massive_corpus.js`) | 1,020 scenarios from 6 domain groups × item templates × deterministic token substitution | `DOMAIN_TEMPLATES` + `replaceTokens()` (cities, flights, times, gates, etc.) | Original to this project but **synthetic and unmoderated** — see §6.6 and §14. |
+| Template-generated scenarios (author-written templates in `generate_massive_corpus.js`) | 1,020 scenarios from 6 domain groups × item templates × deterministic token substitution | `DOMAIN_TEMPLATES` + `replaceTokens()` (cities, flights, times, gates, etc.) | Original to this project but **author-written templates, unmoderated by examiners** — see §6.6 and §14. All 1,020 now have full-transcript neural audio (see next row). |
+| Edge Neural TTS fill (`scripts/generate_all_audio_edge.py`, voice `en-US-AriaNeural`) | Real intelligible single-word recordings for all words lacking Commons audio + real full-transcript recordings for all 1,020 scenarios, normalised to 44.1 kHz / 128 kbps / mono MP3 via ffmpeg | 0 failures over 4,189 generations, verified 2026-09-20 | Original to this project; Microsoft neural voice, no speaker consent issues (synthetic voice); voice differs from Commons humans — heterogeneity disclosed in §6.7. |
 | Plus Jakarta Sans (Google Fonts link in `index.html`) | UI typeface | `<link href="https://fonts.googleapis.com/css2…Plus+Jakarta+Sans…">` | **SIL Open Font License 1.1.** |
 | Preconnect fonts, React, Vite, Tailwind, Lucide, Motion, canvas-confetti | Runtime dependencies (`package.json`) | npm/bun install | Respective MIT/ISC/Apache licences; verify in `bun.lock`. |
 
-No speaker was recorded for this project. All “real human audio” means **pre-existing volunteer recordings re-hosted via Commons**, normalised to MP3. No consent beyond the uploaders’ Commons licences is claimed.
+No speaker was recorded for this project. Speech audio is a disclosed mix: **pre-existing Commons volunteer human recordings (kept wherever they existed — ~500 files) + Microsoft Edge Neural TTS voice `en-US-AriaNeural` for everything else (~4,100 files, including all 1,020 full-sentence scenario transcripts)**. No consent beyond the uploaders' Commons licences is claimed for the human subset; the neural subset is a synthetic voice with no human speaker. Per-word/per-file provenance (human vs neural) is not yet written into `vocabulary.json` — see §14. Voice heterogeneity (mixed Commons speakers + single neural voice) is a known confound for minimal-pair work.
+
+### 6.2b Content policy (educational-safe)
+
+On 2026-09-20 the raw Google-10K-derived wordlist was found to contain 7 vulgar slang entries (`porn`, `pussy`, `xxx`, `fucking`, `fuck`, `porno`, `dick`). All 7 were purged from `vocabulary.json` (v2.0.0 → v2.1.0, 3,600 → 3,593 words). Clinical terms (`sex`, `sexual`) were retained as legitimate vocabulary. All 1,020 scenario transcripts were scanned and are profanity-free. Their orphan MP3s remain harmlessly on disk.
 
 ### 6.3 Data model (exact TypeScript contracts in `src/types/index.ts`)
 
@@ -233,15 +238,19 @@ Six template groups in `generate_massive_corpus.js`: **Airport Terminal & Flight
 
 The earlier `build_educational_corpus.js` contributes the **30 hand-written educational scenarios** (6 per level, lectures/exams/clinics/evacuations) that remain the highest-quality subset and should be cited as such in any university submission (still author-written, not externally moderated).
 
-### 6.6 How transcripts relate to audio — critical disclosure
+### 6.6 How transcripts relate to audio
 
-Scenario objects carry a full-sentence `transcript` **but their `audioUrl` points to a single-word MP3** (`/audio/{targetWord}.mp3`, or `/audio/scenario_{idx}.mp3` which does not exist on disk for generated scenarios and therefore triggers the synthetic fallback). The app **does not synthesise full-sentence speech**; it plays the target word (or fallback tone-stack, see §6.7) through the degraded chain while displaying the scenario text and question. Any submission must describe this honestly as **keyword-in-context comprehension**, not connected-speech comprehension. Full TTS or recorded sentence audio is listed as future work (§15).
+Each scenario object carries a full-sentence `transcript` (e.g. a gate-change announcement) and its `audioUrl` (`/audio/scenario_{idx}.mp3`) now points to a **real full-transcript neural recording** (Edge `en-US-AriaNeural`, average ~10 s, verified by ffprobe spot-check: `scenario_1.mp3` = 10.08 s at 128 kbps). The app plays the whole announcement through the degraded chain while displaying the scenario text and question. The older hand-written subset (30 educational scenarios) uses single-word `audioUrl`s (`/audio/{targetWord}.mp3`) — keyword playback for those. Any submission should state this split honestly: **1,020 generated scenarios = connected-speech (neural voice) comprehension; 30 curated scenarios = keyword-in-context.** Template wording itself remains author-written Mad Libs, unmoderated by examiners (see §14).
 
-### 6.7 Audio coverage and normalisation
+### 6.7 Audio coverage and normalisation (100% — the "cargo cult" gap is closed)
 
-- Ingested audio is converted with `ffmpeg -y -v quiet -i "{temp}" -c:a libmp3lame -b:a 128k -ar 44100 "{target}.mp3"` and accepted only if the output exceeds 1,000 bytes.
-- `GET public/audio/*.mp3 = 482 files` at original snapshot 2026-09-20 (recount now — ingestion scripts keep adding files). The remaining ~3,100 vocabulary items and ~1,020 `scenario_{idx}.mp3` URLs **miss at fetch time** and are served via `AudioEngine.generateSyntheticSpeechBuffer()` — a disclosed developer-invented harmonic-stack placeholder (140 Hz + 700/1,700/2,800 Hz sine partials vaguely mimicking formants, 50 ms attack / 80 ms release envelope, duration `clamp(0.7–2.0 s, len×0.1+0.4)`), not a human voice and containing no lexical content. The UI does not badge synthetic vs human playback — a known defect (§14).
+- All audio is normalised with `ffmpeg -y -v quiet -i "{temp}" -c:a libmp3lame -b:a 128k -ar 44100 -ac 1 "{target}.mp3"` and accepted only if the output exceeds 1,000 bytes.
+- **Verified 2026-09-20: 4,671 MP3s on disk (~240 MB); 0 missing of 3,593 word URLs; 0 missing of 1,020 scenario URLs; 0 files under 1,000 bytes.** Spot-checks: `ship.mp3` = 1.87 s single word; `scenario_1.mp3` = 10.08 s full announcement.
+- Provenance mix: pre-existing Commons human recordings preserved wherever present (~500 files, mixed volunteer speakers/dialects); everything else (`scripts/generate_all_audio_edge.py`, 4,189 files, 0 failures, concurrency 10, 3-attempt retry) is Edge Neural `en-US-AriaNeural` (female US, clear educational timbre), re-encoded to the same 44.1 kHz/128k/mono spec.
+- **Known confound, not hidden:** minimal-pair items now mix human and neural voices across pairs (e.g. one pair human-male, its counterpart neural-female), so voice timbre can cue the answer. For strict phoneme-discrimination studies, regenerate the full word set with the single neural voice (one flag in the script) or restrict to human-only pairs via `sync_vocab.cjs`. Per-file human/neural tagging in `vocabulary.json` is future work (§15).
+- The `AudioEngine.generateSyntheticSpeechBuffer()` sine-stack now never fires; it is retained only as crash protection. The UI does not badge human vs neural playback.
 - Preloading (`audioEngine.preload([current, next])`) warms the current and next item to mask fetch latency.
+- Regeneration: `EDGE_MAX` env var chunks the run (e.g. `$env:EDGE_MAX="120"; python scripts/generate_all_audio_edge.py`); completed chunks are skipped on resume. Full rerun is ~40 min at concurrency 10.
 
 ---
 
@@ -336,12 +345,13 @@ src/components/TrainingCard.tsx   play/clean/read-aloud/speed/prompt/inputs/feed
 src/components/StatsDrawer.tsx    accuracy/streak/completed, per-mode + per-level bars, 15-item history, reset
 src/index.css               Tailwind import, Apple HIG palette, focus rings, .apple-pressable
 public/data/vocabulary.json shipped corpus (1.33 MB)
-public/audio/*.mp3          482 decoded speech files
+public/audio/*.mp3          4,671 real-speech files (words + full-transcript scenarios, 44.1 kHz/128k/mono; ~240 MB — use Git LFS)
 scripts/ingest_audio.js     Wiktionary+Commons+ffmpeg pipeline (v1 dataset + 8 scenarios)
 scripts/build_educational_corpus.js curated A1–C1 corpus (≈250 words + 30 scenarios, v2.0.0 writer)
-scripts/generate_massive_corpus.js  shipped 3,600+1,020 generator (MINIMAL_PAIR_SPECS+Google10K+templates)
+scripts/generate_massive_corpus.js  shipped 3,593+1,020 generator (MINIMAL_PAIR_SPECS+Google10K+templates; v2.1.0 after profanity purge)
 scripts/download_missing_audio.js 43-word Commons top-up downloader
 scripts/sync_vocab.cjs      audio-gated vocab.json rewriter (keeps only words with MP3s)
+scripts/generate_all_audio_edge.py Edge Neural TTS bulk fill — every missing word + every scenario transcript (4,189 files, 0 failures, 44.1k/128k/mono)
 ```
 
 ### 9.3 Data flow
@@ -397,7 +407,7 @@ No build-time secrets are required. Copy `.env.example` to `.env` only if you in
 | `clean` | `rm -rf dist server.js` | Remove build artefacts (POSIX syntax; on stock Windows PowerShell use `Remove-Item -Recurse -Force dist, server.js`). |
 | `ingest` | `node scripts/ingest_audio.js` | Run the v1 human-audio ingestion pipeline (network + ffmpeg). |
 
-Corpus writers are invoked directly: `node scripts/build_educational_corpus.js`, `node scripts/generate_massive_corpus.js`, `node scripts/download_missing_audio.js`, `node scripts/sync_vocab.cjs`. **Warning:** each writer overwrites `public/data/vocabulary.json`. Back it up first; the shipped file is the output of `generate_massive_corpus.js`.
+Corpus writers are invoked directly: `node scripts/build_educational_corpus.js`, `node scripts/generate_massive_corpus.js`, `node scripts/download_missing_audio.js`, `node scripts/sync_vocab.cjs`, `python scripts/generate_all_audio_edge.py`. **Warning:** the `node` writers overwrite `public/data/vocabulary.json`. Back it up first (a v2.0.0 backup is kept at `public/data/vocabulary.v2.0.0.backup.json`); the shipped file is v2.1.0.
 
 ---
 
@@ -408,6 +418,7 @@ Corpus writers are invoked directly: `node scripts/build_educational_corpus.js`,
 3. **`scripts/generate_massive_corpus.js` (shipped output).** `MINIMAL_PAIR_SPECS` (~200 contrast specs → 331 deduplicated pair entries) + live Google-10K fetch stratified to quotas (A1 700 / A2 750 / B1 800 / B2 700 / C1 remainder, total cap 3,600; general items get placeholder `ipa: "/{word}/"`, `partOfSpeech: "noun"`, `category: "general_vocab"`) + deterministic 1,020-scenario template expansion. Writes **minified** `vocabulary.json v2.0.0` with `totalWords` + `totalScenarios`. This is the file in `public/data/`.
 4. **`scripts/download_missing_audio.js`.** 43-word Commons top-up (`book`, `exam`, … `valid`) trying `en-us-`, `En-us-`, `en-uk-`, `En-uk-`, and four Lingua Libre uploader patterns before falling back to Wiktionary-parse. 200 ms pacing, ffmpeg normalisation, per-word success logging.
 5. **`scripts/sync_vocab.cjs`.** Safety rewriter: parses `ingest_audio.js` source for `WORD_DEFINITIONS`/`STRESS_SCENARIOS` via regex+`eval`, keeps only entries whose MP3 exists, reuses prior IPA, writes `v1.0.0`. Useful before offline demos; **do not run casually** — it will shrink the corpus to audio-gated size.
+6. **`scripts/generate_all_audio_edge.py` (shipped audio fill, 2026-09-20).** Reads `vocabulary.json`, collects every word target (`public/audio/{word}.mp3`) and every scenario target (`public/audio/scenario_{n}.mp3`) missing or under 1,000 bytes, synthesises with `edge_tts.Communicate(text, "en-US-AriaNeural")` (words: the word itself; scenarios: the full transcript), then `ffmpeg` normalises to 44.1 kHz / 128 kbps / mono. Concurrency 10, 3-attempt retry, `EDGE_MAX` chunking for resumable runs, `EDGE_VOICE`/`EDGE_CONCURRENCY` overrides. Result: 4,189 files, 0 failures. Rerun is idempotent (existing files skipped).
 
 ---
 
@@ -431,16 +442,16 @@ Keyboard map: `Space` play degraded · `C` clean · `1`–`4` choose · `Enter` 
 - **Human subjects & privacy.** No login, no telemetry, no cookies, no analytics endpoint. All stats remain in the user’s own `localStorage` and can be wiped in one tap. Classroom deployments should still obtain institutional consent for any screen-recorded or exported history used in research.
 - **Accessibility (WCAG 2.2 AA intent, not certified).** Calm Mode, Read Aloud (`rate 0.88`, `en-US`), keyboard-complete operation, ARIA `tablist`/`radiogroup`, labelled canvases/sections, 44–50 px targets, Apple-HIG focus rings, non-colour-only feedback (icons + words + percentages). No independent accessibility audit has been performed; do not cite as WCAG-certified. No vestibular-risk animation beyond the waveform, which Calm Mode removes.
 - **Licensing — read before submitting to a university or corpus registry.** (a) This repository declares **no code licence file**; obtain author permission or add one (MIT/Apache-2.0 recommended) before redistribution. (b) Wiktionary IPA/audio metadata: **CC BY-SA 4.0 — credit “Wiktionary contributors” with hyperlink and licence notice, ShareAlike on adaptation.** (c) Commons audio: **per-file licences vary; bulk MP3 redistribution without per-file credit violates the licences** — generate an attribution appendix from the Commons `imageinfo` `extmetadata` before publishing the `public/audio/` bundle. (d) Google-10K list: research-use; confirm policy for commercial use. (e) Fonts/deps: OFL/MIT/Apache as installed. (f) This project is **not endorsed by, affiliated with, or certified by Oxford University Press, the CEFR Council of Europe, Wiktionary, or Wikimedia.**
-- **Corpus-review suitability.** Suitable as a *study corpus + trainer* with disclosed synthetic/template components (§6.6, §14). Not suitable as a *reference phonetic corpus* until per-file speaker/dialect/licence metadata and human validation of scenario transcripts are added (§15).
+- **Corpus-review suitability.** Suitable as a *study corpus + trainer* with disclosed template wording and mixed human/neural voices (§6.6, §6.7, §14). Not suitable as a *reference phonetic corpus* until per-file speaker/dialect/licence metadata and human validation of scenario transcripts are added (§15).
 
 ---
 
 ## 14. Limitations, Threats to Validity, and Known Defects — Nothing Hidden
 
-1. **Audio coverage gap.** Only 482 of ~4,620 referenced audio URLs existed on disk at original snapshot 2026-09-20 (recount before citing — ingestion keeps adding files). The rest invoke the developer-invented synthetic harmonic-stack fallback (140 Hz + 700/1,700/2,800 Hz sines), which preserves duration/envelope cues but **no lexical content**. Any accuracy claim on uncovered items measures interface behaviour, not listening. Mitigation: run `ingest` + `download_missing_audio`, or gate the corpus with `sync_vocab.cjs`, before controlled studies.
-2. **Scenario audio ≠ transcript.** Full-sentence transcripts have no matching sentence audio; playback is keyword/fallback only. Do not describe scenarios as connected-speech tests.
-3. **Template artefacts.** Generated scenarios reuse phrasing; some option sets required padding (`None of the above`) and some `audioUrl`s (`scenario_{idx}.mp3`) are intentionally non-existent placeholders. Distractor plausibility was not human-rated. Scenarios are unvetted Mad Libs from `{CITY}`, `{GATE}`, `{TIME}` token substitution, not examiner-written items.
-4. **Placeholder phonetics for general vocab.** All 3,269 `general_vocab` items carry `ipa: "/{word}/"` and `partOfSpeech: "noun"` regardless of truth. Only curated/minimal-pair subsets have trustworthy IPA/POS. The `category` union in `src/types/index.ts` still lists the old fine-grained tags while the shipped data uses `general_vocab` — schema drift that will fail strict validators.
+1. **Audio coverage gap — CLOSED 2026-09-20.** The old gap (482 of ~4,620 URLs, rest sine-tone fallback) no longer exists: 4,671 MP3s on disk, 0 missing of 3,593 word URLs and 0 missing of 1,020 scenario URLs. The sine fallback is dormant last-resort code. What reviewers must weigh instead is **voice heterogeneity** (mixed Commons humans + single Edge neural voice — see §6.7) and **repo weight** (~240 MB of MP3s; do not commit to git without LFS — `public/audio/` is currently unignored).
+2. **Scenario audio = full-transcript neural speech (generated scenarios).** The 1,020 template scenarios now play their complete announcement (~10 s) in the Edge neural voice. The 30 hand-written curated scenarios still use keyword audio. Template wording itself remains unvetted Mad Libs — see item 3.
+3. **Template artefacts.** Generated scenarios reuse phrasing; some option sets required padding (`None of the above`) and distractor plausibility was not human-rated. Scenarios are unvetted Mad Libs from `{CITY}`, `{GATE}`, `{TIME}` token substitution, not examiner-written items — though all 1,020 now carry matching full-transcript audio.
+4. **Placeholder phonetics for general vocab.** All 3,262 `general_vocab` items carry `ipa: "/{word}/"` and `partOfSpeech: "noun"` regardless of truth. Only curated/minimal-pair subsets have trustworthy IPA/POS. The `category` union in `src/types/index.ts` still lists the old fine-grained tags while the shipped data uses `general_vocab` — schema drift that will fail strict validators. Per-file human/neural audio provenance is also not yet in `vocabulary.json`.
 5. **Non-deterministic degradation.** Packet-loss dropouts use plain `Math.random()` per playback with no seed — not Gilbert-Elliott or any standard burst-loss model; identical “trials” are not acoustically identical. IR noise is likewise generated once per context from `Math.random()`.
 6. **Unvalidated difficulty strata.** A1–C1 labels are author-assigned by Google-10K frequency rank + developer intuition/curation, not Rasch-calibrated or examiner-moderated. C2 absent by design because there was no objective basis to classify it.
 7. **No adaptive sequencing, no efficacy trial, no reliability stats.** Shuffling is uniform-random; no SRS, no IRT, no Cronbach’s α / test–retest has been computed. The stats drawer is descriptive, not psychometrically validated.
@@ -453,7 +464,7 @@ Keyboard map: `Space` play degraded · `C` clean · `1`–`4` choose · `Enter` 
 
 Proposed within-subjects study: learners grouped by author-assigned A1–C1 practice levels × 5 author-tuned presets × 3 modes, counterbalanced, with pre/post clean-vs-degraded minimal-pair probes at fixed digital-domain SNRs (18/12/5/2/0 dB), retention at 1 week, and transfer to held-out scenarios; primary endpoints per-phoneme Δaccuracy and SNR-slope flattening; analysis by mixed-effects logistic regression with random intercepts for learner and item. Power from pilot drawer data (export `localStorage` JSON). This study has not been run; no efficacy claim is made.
 
-Roadmap, in priority order: (a) per-file speaker/dialect/licence attribution roll + human IPA/POS audit; (b) full-sentence recorded or consented-TTS scenario audio replacing keyword playback; (c) seeded-PRNG “frozen trial” mode for replicability; (d) adaptive scheduler (IRT/SRS) + reliability reporting; (e) C2 stratum only after external moderation; (f) server-optional sync with E2E encryption; (g) ESLint + unit/integration tests for scoring, shuffling, and DSP math; (h) SPL-calibrated headphone profiles and safe-listening limiter.
+Roadmap, in priority order: (a) per-file speaker/dialect/licence attribution roll (human-vs-neural tag per entry) + human IPA/POS audit; (b) single-voice minimal-pair set option for strict discrimination studies (one flag in `generate_all_audio_edge.py`); (c) seeded-PRNG “frozen trial” mode for replicability; (d) adaptive scheduler (IRT/SRS) + reliability reporting; (e) C2 stratum only after external moderation; (f) server-optional sync with E2E encryption; (g) ESLint + unit/integration tests for scoring, shuffling, and DSP math; (h) SPL-calibrated headphone profiles and safe-listening limiter; (i) Git LFS for `public/audio/` (~240 MB).
 
 ---
 
@@ -470,7 +481,7 @@ Roadmap, in priority order: (a) per-file speaker/dialect/licence attribution rol
 - CAST. *Universal Design for Learning Guidelines*; W3C. *Web Content Accessibility Guidelines (WCAG) 2.2* (intent only, no certification).
 - Data sources: English Wiktionary (CC BY-SA 4.0); Wikimedia Commons (per-file licences); first20hours/google-10000-english (GitHub); Plus Jakarta Sans (OFL 1.1).
 
-Suggested citation for this system: *Listening Practice — Acoustic Ear Degraded-Speech Practice Prototype, corpus v2.0.0 (3,600 words; 1,020 template-generated scenarios; 482 MP3s at original 2026-09-20 snapshot), React/Web-Audio implementation, 2026. Independent prototype, not OUP/CEFR-certified. Wiktionary/Commons audio © their contributors under CC BY-SA/CC0/GFDL as applicable.*
+Suggested citation for this system: *Listening Practice — Acoustic Ear Degraded-Speech Practice Prototype, corpus v2.1.0 (3,593 educational-safe words; 1,020 scenarios with full-transcript audio; 4,671 MP3s, 0 missing, verified 2026-09-20), React/Web-Audio implementation, 2026. Independent prototype, not OUP/CEFR-certified. Commons human audio © their contributors under CC BY-SA/CC0/GFDL as applicable; remaining audio is Microsoft Edge Neural TTS (`en-US-AriaNeural`).*
 
 ---
 
@@ -513,9 +524,9 @@ SNR (signal-to-noise ratio, dB); HP/LP (high-/low-pass cutoff); WaveShaper drive
 
 ### Appendix F — Version and reproduction record
 
-- Corpus snapshot: `version 2.0.0`, 3,600 words, 1,020 template-generated scenarios, 1,330,524-byte `vocabulary.json`, 482 MP3s, measured 2026-09-20 via `python … json.load` + `Get-ChildItem public/audio`. Recount before citing — audio count grows as ingestion runs.
-- Generator: `node scripts/generate_massive_corpus.js` (minified output). Curated predecessor: `node scripts/build_educational_corpus.js` (pretty-printed, 30 hand-written scenarios).
+- Corpus snapshot: `version 2.1.0`, 3,593 educational-safe words, 1,020 scenarios, `audioCoverage` block (0 missing), 4,671 MP3s (~240 MB, 44.1 kHz/128k/mono), verified 2026-09-20 via `python … json.load` + `Get-ChildItem public/audio` + ffprobe spot-checks (`ship.mp3` 1.87 s, `scenario_1.mp3` 10.08 s). Backup of v2.0.0 kept at `public/data/vocabulary.v2.0.0.backup.json`.
+- Generators: `node scripts/generate_massive_corpus.js` (word/scenario JSON) then `python scripts/generate_all_audio_edge.py` (all audio; `EDGE_MAX` chunks resumption, 4,189 files, 0 failures). Curated predecessor: `node scripts/build_educational_corpus.js` (pretty-printed, 30 hand-written scenarios).
 - Reproduce counts any time with the one-liner in §6.1. Back up `vocabulary.json` before re-running any writer script.
 - Git history at writing: `08d04af feat: initial project scaffold` over `e2324c8 Initial commit` (2 commits; corpus and audio largely untracked/parallel to history — confirm `.gitignore` coverage before archiving for review).
 
-*End of README — no aspect of the corpus size, audio coverage, DSP mathematics, scoring rules, data provenance, licensing obligations, or known defects has been knowingly withheld. Where the implementation is provisional (invented synthetic fallback, template scenarios, placeholder IPA, author-assigned levels, ear-tuned presets, inert Gemini flag), it is labelled as such above so reviewers can judge accordingly. This is an independent practice prototype, not an accredited test suite.*
+*End of README — no aspect of the corpus size, audio coverage, DSP mathematics, scoring rules, data provenance, licensing obligations, or known defects has been knowingly withheld. Where the implementation is provisional (dormant sine fallback, template scenarios, placeholder IPA, author-assigned levels, ear-tuned presets, mixed human/neural voices, inert Gemini flag), it is labelled as such above so reviewers can judge accordingly. This is an independent practice prototype, not an accredited test suite. Audio: 4,671 real-speech MP3s, 0 missing, verified 2026-09-20.*
