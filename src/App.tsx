@@ -20,6 +20,25 @@ import { TrainingCard } from './components/TrainingCard';
 import { StatsDrawer } from './components/StatsDrawer';
 import { Shuffle, Keyboard } from 'lucide-react';
 
+function getAutoPresetForScenario(item: StressScenario): AcousticPresetId | null {
+  const text = (item.scenario + ' ' + item.contextDescription).toLowerCase();
+  
+  if (/\b(flight|airport|gate|concourse|subway|platform|train|transit|baggage claim|station)\b/.test(text)) {
+    return 'train_pa';
+  }
+  if (/\b(voicemail|phone|call|customer service)\b/.test(text)) {
+    if (/\b(cell|mobile|poor signal|bad reception)\b/.test(text)) return 'cellphone';
+    return 'landline';
+  }
+  if (/\b(intercom|announcement|pa system|counter|drive-thru)\b/.test(text) && !text.includes('train') && !text.includes('airport')) {
+    return 'intercom_staccato';
+  }
+  if (/\b(security|police|dispatch|walkie|radio)\b/.test(text)) {
+    return 'walkie_talkie';
+  }
+  return null;
+}
+
 const STATS_STORAGE_KEY = 'acoustic_ear_user_stats_v5';
 const LEVEL_STORAGE_KEY = 'acoustic_ear_oxford_level_v1';
 
@@ -124,6 +143,7 @@ export default function App() {
   // Active audio playback state
   const [isPlaying, setIsPlaying] = useState(false);
   const [isClean, setIsClean] = useState(false);
+  const [isAutoMode, setIsAutoMode] = useState(true);
 
   // In-situ feedback state
   const [feedback, setFeedback] = useState<{
@@ -335,7 +355,14 @@ export default function App() {
     audioEngine.stop();
     setIsPlaying(false);
     setFeedback(null);
-  }, [activeItem]);
+    
+    if (currentMode === 'comprehension_stress' && isAutoMode && activeItem) {
+      const presetId = getAutoPresetForScenario(activeItem as StressScenario);
+      if (presetId) {
+        setAcousticConfig(ACOUSTIC_PRESETS[presetId]);
+      }
+    }
+  }, [activeItem, currentMode, isAutoMode]);
 
   // Submit and verify answer
   const handleSubmitAnswer = (rawAnswer: string) => {
@@ -471,6 +498,7 @@ export default function App() {
     audioEngine.stop();
     setIsPlaying(false);
     setAcousticConfig(ACOUSTIC_PRESETS[presetId]);
+    setIsAutoMode(false); // disable auto mode if manually selected
   };
 
   const handleClearStats = () => {
@@ -489,6 +517,7 @@ export default function App() {
           setFeedback(null);
           setCurrentMode(mode);
           setCurrentIndex(0);
+          if (mode === 'comprehension_stress') setIsAutoMode(true);
         }}
         stats={stats}
         onOpenStats={() => setIsStatsOpen(true)}
@@ -601,6 +630,9 @@ export default function App() {
                     currentConfig={acousticConfig}
                     onSelectPreset={handleSelectPreset}
                     onUpdateConfig={setAcousticConfig}
+                    isAutoMode={isAutoMode}
+                    onToggleAutoMode={setIsAutoMode}
+                    showAutoToggle={currentMode === 'comprehension_stress'}
                   />
                 </section>
               </>

@@ -6,6 +6,9 @@ interface PresetSelectorProps {
   currentConfig: AcousticConfig;
   onSelectPreset: (presetId: AcousticPresetId) => void;
   onUpdateConfig: (newConfig: AcousticConfig) => void;
+  isAutoMode?: boolean;
+  onToggleAutoMode?: (auto: boolean) => void;
+  showAutoToggle?: boolean;
 }
 
 const PRESET_CARDS: {
@@ -62,7 +65,10 @@ const PRESET_CARDS: {
 export const PresetSelector: React.FC<PresetSelectorProps> = ({
   currentConfig,
   onSelectPreset,
-  onUpdateConfig
+  onUpdateConfig,
+  isAutoMode,
+  onToggleAutoMode,
+  showAutoToggle
 }) => {
   const [showCustomSliders, setShowCustomSliders] = useState(false);
 
@@ -93,8 +99,21 @@ export const PresetSelector: React.FC<PresetSelectorProps> = ({
             Choose what kind of background noise to listen through
           </p>
         </div>
-        <div className="text-xs font-semibold text-[#007aff] bg-[#007aff]/10 px-3 py-1.5 rounded-full border border-[#007aff]/20 self-start sm:self-auto">
-          Active: {currentConfig.name}
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          {showAutoToggle && (
+            <label className="flex items-center gap-2 text-xs font-medium text-[#1d1d1f] cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={isAutoMode} 
+                onChange={(e) => onToggleAutoMode?.(e.target.checked)}
+                className="w-4 h-4 rounded border-black/[0.16] text-[#007aff] focus:ring-[#007aff]"
+              />
+              Auto-Select
+            </label>
+          )}
+          <div className="text-xs font-semibold text-[#007aff] bg-[#007aff]/10 px-3 py-1.5 rounded-full border border-[#007aff]/20">
+            Active: {currentConfig.name}
+          </div>
         </div>
       </div>
 
